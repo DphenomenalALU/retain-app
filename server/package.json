@@ -1,0 +1,6 @@
+{
+  "name": "retain-api",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "node --watch src/index.mjs", "start": "node src/index.mjs" }
+}
