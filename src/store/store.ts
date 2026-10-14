@@ -1,9 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 import expensesReducer from "./slices/expensesSlice";
+import budgetReducer from "./slices/budgetSlice";
 import uiReducer from "./slices/uiSlice";
 
 export const store = configureStore({
-  reducer: { expenses: expensesReducer, ui: uiReducer },
+  reducer: { expenses: expensesReducer, budget: budgetReducer, ui: uiReducer },
   devTools: import.meta.env.DEV,
 });
 

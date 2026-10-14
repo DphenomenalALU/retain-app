@@ -9,7 +9,8 @@ import SignInPage from "./pages/SignInPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
 function ProtectedLayout() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return <main className="loading-page"><span className="loading-orb" />Loading your workspace…</main>;
   if (!user) return <Navigate to="/sign-in" replace />;
   return <AppShell><Outlet /></AppShell>;
 }

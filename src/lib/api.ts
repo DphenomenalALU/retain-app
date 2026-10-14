@@ -6,10 +6,20 @@ export class ApiError extends Error {
 }
 
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = localStorage.getItem("retain_token");
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
-    headers: { "Content-Type": "application/json", ...options.headers },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
   });
-  if (!response.ok) throw new ApiError("The request could not be completed.", response.status);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null) as { error?: string } | null;
+    throw new ApiError(body?.error ?? "The request could not be completed.", response.status);
+  }
   return response.json() as Promise<T>;
 }
+
+export type AuthPayload = { user: import("../types/retain").User; token: string };

@@ -6,3 +6,5 @@ export type Expense = {
   paymentMethod: "Card" | "Transfer" | "Cash"; note?: string;
 };
 export type Budget = { month: string; amount: number };
+export type ExpenseInput = { title: string; amount: number; categoryId: string; date: string; paymentMethod: Expense["paymentMethod"]; note?: string };
+export type ExpenseListResponse = { items: Expense[]; page: number; pageSize: number; total: number; totalPages: number };
