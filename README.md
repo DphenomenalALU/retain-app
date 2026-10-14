@@ -1,21 +1,19 @@
 # Retain
 
-Retain is a personal expense and monthly budget manager built with React, TypeScript, Vite, Redux Toolkit, and a planned PostgreSQL REST API.
+Retain is a personal expense and monthly budget manager built with React, TypeScript, Vite, Redux Toolkit, and a REST API.
 
-## Day 1 foundation
+## Current checkpoint: Day 2
 
-The current checkpoint includes:
-
-- Responsive Retain application shell and finance-focused dashboard
-- Typed expense and budget domain models with seeded review data
-- Redux Toolkit store with expense and UI slices
-- React Context authentication boundary and protected routes
-- User, budget, expense, and admin spaces ready for API integration
-- PostgreSQL schema, indexes, and seed SQL under `server/db`
-- Node API health endpoint under `server/src`
+- Real sign-up, sign-in, sign-out, session persistence, and protected routes
+- User-owned expense CRUD with validation and destructive-action confirmation
+- Redux-managed search, category/payment filters, sorting, and pagination
+- Monthly budget read/update flow with live progress calculations
+- Responsive finance dashboard and mobile expense workflow
+- Durable local development repository under `server/data/`
+- PostgreSQL schema and indexes under `server/db/` for the deployment migration
 - Reduced-motion support, accessible focus states, 44px interaction targets, and mobile navigation
 
-Day 1 uses local seed data so the UI can be reviewed before the Day 2 API integration. Authentication, expense CRUD, filters, budgets, and admin insights are the next implementation checkpoints.
+The local API uses a JSON repository for deterministic development without hosted database credentials. The PostgreSQL schema is kept as the production data contract and will be used during the deployment hardening pass.
 
 ## Run the frontend
 
@@ -23,7 +21,7 @@ Requirements: Node.js 20+ and npm.
 
 ```bash
 npm install
-npm run dev
+VITE_API_URL=http://localhost:4000/api npm run dev
 ```
 
 To verify a production build:
@@ -33,28 +31,36 @@ npm run build
 npm run preview
 ```
 
-## Run the API foundation
+## Run the API
 
 ```bash
 cd server
+npm install
 npm run start
 ```
 
 Check `http://localhost:4000/api/health`.
 
+Demo admin credentials:
+
+```text
+maya@retain.app
+password
+```
+
 ## Project structure
 
 ```text
 src/
-├── components/        Reusable layout and UI primitives
+├── components/        Reusable layout, UI, and expense form components
 ├── context/           React Context authentication boundary
-├── data/              Typed Day 1 review data
-├── lib/               API client boundary
+├── data/              Day 1 reference data and categories
+├── lib/               Authenticated API client boundary
 ├── pages/             Dashboard, expenses, budgets, and admin routes
-├── store/             Redux Toolkit store and slices
+├── store/             Redux Toolkit store, filters, expenses, and budgets
 └── types/             Shared finance domain types
 server/
 ├── db/schema.sql      PostgreSQL schema and indexes
-├── db/seed.sql        Safe initial categories, user, and budget
-└── src/index.mjs      Day 1 health endpoint
+├── db/seed.sql        PostgreSQL seed contract
+└── src/index.mjs      Day 2 authenticated REST API
 ```
