@@ -2,5 +2,12 @@
   "name": "retain-api",
   "private": true,
   "type": "module",
-  "scripts": { "dev": "node --watch src/index.mjs", "start": "node src/index.mjs" }
+  "scripts": {
+    "dev": "node --watch src/index.mjs",
+    "start": "node src/index.mjs"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.3"
+  }
 }

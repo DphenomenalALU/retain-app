@@ -1,15 +1,54 @@
 import { createServer } from "node:http";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { randomUUID } from "node:crypto";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const dataDir = join(__dirname, "../data");
+const dataFile = process.env.DATA_FILE ?? join(dataDir, "retain.json");
+mkdirSync(dataDir, { recursive: true });
 const port = Number(process.env.PORT ?? 4000);
-const send = (response, status, body) => {
-  response.writeHead(status, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, Authorization", "Content-Type": "application/json" });
-  response.end(JSON.stringify(body));
-};
+const jwtSecret = process.env.JWT_SECRET ?? "retain-day2-development-secret";
+const seededCategories = [{ id: "cat_001", name: "Food & dining", color: "#E58B58", isSystem: false }, { id: "cat_002", name: "Transport", color: "#4E8C9A", isSystem: false }, { id: "cat_003", name: "Home", color: "#8D7BBD", isSystem: false }, { id: "cat_004", name: "Wellness", color: "#D39A52", isSystem: false }, { id: "cat_005", name: "Uncategorized", color: "#9AA6A2", isSystem: true }];
+const initialData = { users: [], categories: seededCategories, expenses: [], budgets: [] };
+const loadData = () => { if (!existsSync(dataFile)) return structuredClone(initialData); try { return JSON.parse(readFileSync(dataFile, "utf8")); } catch { return structuredClone(initialData); } };
+const data = loadData();
+const save = () => writeFileSync(dataFile, JSON.stringify(data, null, 2));
+const id = (prefix) => `${prefix}_${randomUUID().slice(0, 8)}`;
+if (!data.categories.length) data.categories.push(...structuredClone(seededCategories));
+if (!data.users.some((user) => user.email === "maya@retain.app")) { data.users.push({ id: "usr_001", name: "Maya Ibrahim", email: "maya@retain.app", passwordHash: bcrypt.hashSync("password", 10), role: "admin", createdAt: new Date().toISOString() }); data.budgets.push({ id: "bud_001", userId: "usr_001", month: "2026-10", amount: 1200 }); data.expenses.push(...[{ id: "exp_001", userId: "usr_001", title: "Market groceries", amount: 86.4, categoryId: "cat_001", date: "2026-10-12", paymentMethod: "Card", note: "Weekly staples" }, { id: "exp_002", userId: "usr_001", title: "Ride to the studio", amount: 18.5, categoryId: "cat_002", date: "2026-10-11", paymentMethod: "Transfer" }, { id: "exp_003", userId: "usr_001", title: "Home internet", amount: 52, categoryId: "cat_003", date: "2026-10-10", paymentMethod: "Card" }, { id: "exp_004", userId: "usr_001", title: "Pilates class", amount: 34, categoryId: "cat_004", date: "2026-10-08", paymentMethod: "Card" }, { id: "exp_005", userId: "usr_001", title: "Sunday lunch", amount: 42.75, categoryId: "cat_001", date: "2026-10-05", paymentMethod: "Cash" }, { id: "exp_006", userId: "usr_001", title: "Pharmacy refill", amount: 27.2, categoryId: "cat_004", date: "2026-10-03", paymentMethod: "Card" }, { id: "exp_007", userId: "usr_001", title: "Parking", amount: 12, categoryId: "cat_002", date: "2026-10-02", paymentMethod: "Cash" }]); save(); }
 
-const server = createServer((request, response) => {
-  if (request.method === "OPTIONS") { response.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, Authorization" }); response.end(); return; }
-  if (request.method === "GET" && request.url === "/api/health") { send(response, 200, { status: "ok", service: "retain-api", version: "0.1.0" }); return; }
-  send(response, 404, { error: "Route not found", code: "NOT_FOUND" });
-});
+class HttpError extends Error { constructor(status, message, code = "REQUEST_ERROR") { super(message); this.status = status; this.code = code; } }
+const send = (response, status, body) => { response.writeHead(status, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type, Authorization", "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS", "Content-Type": "application/json" }); response.end(body === null ? "" : JSON.stringify(body)); };
+const readBody = async (request) => { let raw = ""; for await (const chunk of request) raw += chunk; if (!raw) return {}; try { return JSON.parse(raw); } catch { throw new HttpError(400, "Request body must be valid JSON.", "INVALID_JSON"); } };
+const userView = (user) => ({ id: user.id, name: user.name, email: user.email, role: user.role });
+const tokenFor = (user) => jwt.sign({ sub: user.id }, jwtSecret, { expiresIn: "7d" });
+const authUser = (request) => { const header = request.headers.authorization ?? ""; if (!header.startsWith("Bearer ")) throw new HttpError(401, "Sign in is required.", "UNAUTHENTICATED"); try { const payload = jwt.verify(header.slice(7), jwtSecret); const user = data.users.find((candidate) => candidate.id === payload.sub); if (!user) throw new Error(); return user; } catch { throw new HttpError(401, "Your session has expired. Please sign in again.", "INVALID_SESSION"); } };
+const categoryView = (category) => ({ id: category.id, name: category.name, color: category.color });
+const expenseView = (expense) => { const category = data.categories.find((candidate) => candidate.id === expense.categoryId) ?? data.categories.at(-1); return { id: expense.id, title: expense.title, amount: expense.amount, category: categoryView(category), date: expense.date, paymentMethod: expense.paymentMethod, note: expense.note }; };
+const validExpense = (body) => { if (!body.title?.trim() || !Number.isFinite(Number(body.amount)) || Number(body.amount) <= 0 || !body.categoryId || !/^\d{4}-\d{2}-\d{2}$/.test(body.date) || !["Card", "Transfer", "Cash"].includes(body.paymentMethod)) throw new HttpError(422, "Add a title, positive amount, category, date, and payment method.", "INVALID_EXPENSE"); if (!data.categories.some((category) => category.id === body.categoryId)) throw new HttpError(422, "Choose a valid category.", "INVALID_CATEGORY"); };
+const listExpenses = (userId, url) => { const page = Math.max(Number(url.searchParams.get("page") ?? 1), 1); const pageSize = Math.min(Math.max(Number(url.searchParams.get("pageSize") ?? 20), 1), 50); let rows = data.expenses.filter((expense) => expense.userId === userId); const search = url.searchParams.get("search")?.trim().toLowerCase(); if (search) rows = rows.filter((expense) => expense.title.toLowerCase().includes(search) || expense.note?.toLowerCase().includes(search)); const categoryId = url.searchParams.get("categoryId"); if (categoryId) rows = rows.filter((expense) => expense.categoryId === categoryId); const paymentMethod = url.searchParams.get("paymentMethod"); if (paymentMethod) rows = rows.filter((expense) => expense.paymentMethod === paymentMethod); const sortBy = url.searchParams.get("sortBy") === "amount" ? "amount" : "date"; const direction = url.searchParams.get("sortDirection") === "asc" ? 1 : -1; rows.sort((a, b) => { const left = sortBy === "amount" ? a.amount : a.date; const right = sortBy === "amount" ? b.amount : b.date; return (left > right ? 1 : left < right ? -1 : 0) * direction; }); const total = rows.length; return { items: rows.slice((page - 1) * pageSize, page * pageSize).map(expenseView), page, pageSize, total, totalPages: Math.max(Math.ceil(total / pageSize), 1) }; };
 
-server.listen(port, () => console.log(`Retain API foundation listening on http://localhost:${port}`));
+async function handle(request, response) {
+  if (request.method === "OPTIONS") { send(response, 204, null); return; }
+  const url = new URL(request.url, `http://${request.headers.host ?? "localhost"}`); const path = url.pathname; const segments = path.split("/").filter(Boolean);
+  if (request.method === "GET" && path === "/api/health") { send(response, 200, { status: "ok", service: "retain-api", version: "0.2.0" }); return; }
+  if (request.method === "POST" && path === "/api/auth/signup") { const body = await readBody(request); if (!body.name?.trim() || !body.email?.trim() || !body.password || body.password.length < 8) throw new HttpError(422, "Name, email, and a password of at least 8 characters are required.", "INVALID_SIGNUP"); const email = body.email.trim().toLowerCase(); if (data.users.some((user) => user.email === email)) throw new HttpError(409, "An account with that email already exists.", "EMAIL_TAKEN"); const user = { id: id("usr"), name: body.name.trim(), email, passwordHash: bcrypt.hashSync(body.password, 10), role: "user", createdAt: new Date().toISOString() }; data.users.push(user); save(); send(response, 201, { user: userView(user), token: tokenFor(user) }); return; }
+  if (request.method === "POST" && path === "/api/auth/signin") { const body = await readBody(request); const user = data.users.find((candidate) => candidate.email === body.email?.trim().toLowerCase()); if (!user || !bcrypt.compareSync(body.password ?? "", user.passwordHash)) throw new HttpError(401, "Email or password is incorrect.", "INVALID_CREDENTIALS"); send(response, 200, { user: userView(user), token: tokenFor(user) }); return; }
+  if (request.method === "GET" && path === "/api/auth/me") { send(response, 200, { user: userView(authUser(request)) }); return; }
+  if (request.method === "POST" && path === "/api/auth/signout") { send(response, 200, { ok: true }); return; }
+  const user = authUser(request);
+  if (request.method === "GET" && path === "/api/categories") { send(response, 200, { items: data.categories.map(categoryView) }); return; }
+  if (request.method === "GET" && path === "/api/expenses") { send(response, 200, listExpenses(user.id, url)); return; }
+  if (request.method === "POST" && path === "/api/expenses") { const body = await readBody(request); validExpense(body); const expense = { id: id("exp"), userId: user.id, title: body.title.trim(), amount: Number(body.amount), categoryId: body.categoryId, date: body.date, paymentMethod: body.paymentMethod, note: body.note?.trim() || undefined }; data.expenses.unshift(expense); save(); send(response, 201, { item: expenseView(expense) }); return; }
+  if (segments[1] === "expenses" && segments[2] && ["PATCH", "DELETE"].includes(request.method)) { const expenseIndex = data.expenses.findIndex((expense) => expense.id === segments[2] && expense.userId === user.id); if (expenseIndex < 0) throw new HttpError(404, "Expense not found.", "EXPENSE_NOT_FOUND"); if (request.method === "DELETE") { data.expenses.splice(expenseIndex, 1); save(); send(response, 200, { ok: true }); return; } const body = await readBody(request); validExpense(body); const updated = { ...data.expenses[expenseIndex], title: body.title.trim(), amount: Number(body.amount), categoryId: body.categoryId, date: body.date, paymentMethod: body.paymentMethod, note: body.note?.trim() || undefined }; data.expenses[expenseIndex] = updated; save(); send(response, 200, { item: expenseView(updated) }); return; }
+  if (request.method === "GET" && segments[1] === "budgets" && segments[2]) { const month = segments[2]; const budget = data.budgets.find((candidate) => candidate.userId === user.id && candidate.month === month); send(response, 200, { month, amount: budget?.amount ?? 0 }); return; }
+  if (request.method === "PUT" && segments[1] === "budgets" && segments[2]) { const body = await readBody(request); const amount = Number(body.amount); if (!Number.isFinite(amount) || amount < 0) throw new HttpError(422, "Budget must be a non-negative amount.", "INVALID_BUDGET"); const month = segments[2]; const existing = data.budgets.find((candidate) => candidate.userId === user.id && candidate.month === month); if (existing) existing.amount = amount; else data.budgets.push({ id: id("bud"), userId: user.id, month, amount }); save(); send(response, 200, { month, amount }); return; }
+  throw new HttpError(404, "Route not found.", "NOT_FOUND");
+}
+
+const server = createServer((request, response) => { handle(request, response).catch((error) => { const status = error instanceof HttpError ? error.status : 500; send(response, status, { error: error.message ?? "Unexpected server error.", code: error.code ?? "INTERNAL_ERROR" }); }); });
+server.listen(port, () => console.log(`Retain API listening on http://localhost:${port}`));
