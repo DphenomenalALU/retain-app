@@ -8,3 +8,14 @@ export type Expense = {
 export type Budget = { month: string; amount: number };
 export type ExpenseInput = { title: string; amount: number; categoryId: string; date: string; paymentMethod: Expense["paymentMethod"]; note?: string };
 export type ExpenseListResponse = { items: Expense[]; page: number; pageSize: number; total: number; totalPages: number };
+export type AdminUser = User & { createdAt: string };
+export type AdminCategory = ExpenseCategory & { isSystem: boolean; expenseCount: number };
+export type AdminInsights = {
+  currentMonth: string;
+  totals: { users: number; expenses: number; value: number; currentMonthExpenses: number };
+  spendingByCategory: Array<{ category: ExpenseCategory; total: number; count: number }>;
+  topCategories: Array<{ category: ExpenseCategory; count: number; total: number }>;
+  bottomCategories: Array<{ category: ExpenseCategory; count: number; total: number }>;
+  recentExpenses: Expense[];
+  recentUsers: AdminUser[];
+};

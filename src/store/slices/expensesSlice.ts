@@ -3,12 +3,12 @@ import { apiRequest } from "../../lib/api";
 import type { Expense, ExpenseListResponse } from "../../types/retain";
 import type { RootState } from "../store";
 
-export type ExpenseFilters = { search: string; categoryId: string; paymentMethod: string; sortBy: "date" | "amount"; sortDirection: "asc" | "desc"; page: number; pageSize: number };
+export type ExpenseFilters = { search: string; categoryId: string; paymentMethod: string; dateFrom: string; dateTo: string; sortBy: "date" | "amount"; sortDirection: "asc" | "desc"; page: number; pageSize: number };
 type ExpensesState = { items: Expense[]; summaryItems: Expense[]; total: number; totalPages: number; selectedMonth: string; filters: ExpenseFilters; loading: boolean; summaryLoading: boolean; error: string | null };
 
 const initialState: ExpensesState = {
   items: [], summaryItems: [], total: 0, totalPages: 1, selectedMonth: "2026-10", loading: false, summaryLoading: false, error: null,
-  filters: { search: "", categoryId: "", paymentMethod: "", sortBy: "date", sortDirection: "desc", page: 1, pageSize: 8 },
+  filters: { search: "", categoryId: "", paymentMethod: "", dateFrom: "", dateTo: "", sortBy: "date", sortDirection: "desc", page: 1, pageSize: 8 },
 };
 
 export const fetchExpenses = createAsyncThunk<ExpenseListResponse, void, { state: RootState; rejectValue: string }>("expenses/fetch", async (_, thunkApi) => {
@@ -17,6 +17,8 @@ export const fetchExpenses = createAsyncThunk<ExpenseListResponse, void, { state
   if (filters.search) params.set("search", filters.search);
   if (filters.categoryId) params.set("categoryId", filters.categoryId);
   if (filters.paymentMethod) params.set("paymentMethod", filters.paymentMethod);
+  if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
+  if (filters.dateTo) params.set("dateTo", filters.dateTo);
   try { return await apiRequest<ExpenseListResponse>(`/expenses?${params}`); }
   catch (error) { return thunkApi.rejectWithValue(error instanceof Error ? error.message : "Unable to load expenses."); }
 });
