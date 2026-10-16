@@ -2,7 +2,7 @@
 
 Retain is a personal expense and monthly budget manager built with React, TypeScript, Vite, Redux Toolkit, and a REST API.
 
-## Current checkpoint: Day 3
+## Current checkpoint: Day 4
 
 - Real sign-up, sign-in, sign-out, session persistence, and protected routes
 - User-owned expense CRUD with validation and destructive-action confirmation
@@ -11,6 +11,8 @@ Retain is a personal expense and monthly budget manager built with React, TypeSc
 - Responsive finance dashboard and mobile expense workflow
 - Admin-only platform insights, category CRUD, and safe category reassignment
 - Date-range filtering alongside search, category, payment, sorting, and pagination
+- Production configuration examples, payload limits, cache headers, and CI quality checks
+- Repeatable isolated API smoke test covering auth, ownership, budgets, and admin workflows
 - Durable local development repository under `server/data/`
 - PostgreSQL schema and indexes under `server/db/` for the deployment migration
 - Reduced-motion support, accessible focus states, 44px interaction targets, and mobile navigation
@@ -33,6 +35,12 @@ npm run build
 npm run preview
 ```
 
+To run the isolated API verification suite:
+
+```bash
+npm run test:smoke
+```
+
 ## Run the API
 
 ```bash
@@ -50,6 +58,8 @@ maya@retain.app
 password
 ```
 
+For hosted API configuration, copy `server/.env.example` into the deployment environment. A production process must provide a strong `JWT_SECRET`; set `CORS_ORIGIN` to the deployed frontend origin. The local JSON repository is deterministic for development and smoke tests; the PostgreSQL schema in `server/db/schema.sql` remains the production database contract for Day 5 deployment.
+
 ## Project structure
 
 ```text
@@ -66,6 +76,8 @@ server/
 ├── db/seed.sql        PostgreSQL seed contract
 └── src/index.mjs      Authenticated REST API and admin endpoints
 ```
+
+GitHub Actions runs the frontend build and the isolated API smoke test on pushes and pull requests through `.github/workflows/quality.yml`.
 
 ## API surface
 
