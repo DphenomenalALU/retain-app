@@ -35,7 +35,7 @@ try {
   const categoryId = category.body.item.id;
   const createdExpense = await call("/expenses", { method: "POST", ...json({ title: "Smoke reassignment", amount: 12.5, categoryId, date: "2026-10-16", paymentMethod: "Cash" }, adminToken) });
   assert(createdExpense.status === 201, "expense creation failed");
-  const filtered = await call("/expenses?dateFrom=2026-10-16&dateTo=2026-10-16", { headers: { Authorization: `Bearer ${adminToken}` } });
+  const filtered = await call("/expenses?month=2026-10&dateFrom=2026-10-16&dateTo=2026-10-16", { headers: { Authorization: `Bearer ${adminToken}` } });
   assert(filtered.status === 200 && filtered.body.items.some((item) => item.title === "Smoke reassignment"), "date filtering failed");
   const budget = await call("/budgets/2026-10", { method: "PUT", ...json({ amount: 900 }, adminToken) });
   assert(budget.status === 200 && budget.body.amount === 900, "budget update failed");
@@ -47,7 +47,7 @@ try {
   assert(afterDelete.status === 200 && afterDelete.body.items[0]?.category.name === "Uncategorized", "category reassignment failed");
   const userExpenses = await call("/expenses", { headers: { Authorization: `Bearer ${userAuth.body.token}` } });
   assert(userExpenses.status === 200 && userExpenses.body.total === 0, "expense ownership boundary failed");
-  console.log("Retain smoke test passed: auth, admin authorization, ownership, budgets, category CRUD, reassignment, and date filtering.");
+  console.log("Retain smoke test passed: auth, admin authorization, ownership, budgets, category CRUD, reassignment, and month/date filtering.");
 } catch (error) {
   console.error(`Retain smoke test failed: ${error instanceof Error ? error.message : String(error)}`);
   process.exitCode = 1;

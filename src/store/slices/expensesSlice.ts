@@ -22,7 +22,7 @@ export const fetchExpenses = createAsyncThunk<ExpenseListResponse, void, { state
   try { return await apiRequest<ExpenseListResponse>(`/expenses?${params}`); }
   catch (error) { return thunkApi.rejectWithValue(error instanceof Error ? error.message : "Unable to load expenses."); }
 });
-export const fetchExpenseSummary = createAsyncThunk<ExpenseListResponse, void, { rejectValue: string }>("expenses/fetchSummary", async (_, thunkApi) => { try { return await apiRequest<ExpenseListResponse>("/expenses?page=1&pageSize=50&sortBy=date&sortDirection=desc"); } catch (error) { return thunkApi.rejectWithValue(error instanceof Error ? error.message : "Unable to load expense summary."); } });
+export const fetchExpenseSummary = createAsyncThunk<ExpenseListResponse, string, { rejectValue: string }>("expenses/fetchSummary", async (month, thunkApi) => { try { return await apiRequest<ExpenseListResponse>(`/expenses?page=1&pageSize=50&sortBy=date&sortDirection=desc&month=${month}`); } catch (error) { return thunkApi.rejectWithValue(error instanceof Error ? error.message : "Unable to load expense summary."); } });
 
 const expensesSlice = createSlice({
   name: "expenses", initialState,
