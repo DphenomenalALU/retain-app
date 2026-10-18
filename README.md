@@ -81,6 +81,6 @@ GitHub Actions runs the frontend build and the isolated API smoke test on pushes
 
 ## API surface
 
-Authenticated user routes include `GET /categories`, `GET/POST /expenses`, `PATCH/DELETE /expenses/:id`, and `GET/PUT /budgets/:month`. Expense lists accept `search`, `categoryId`, `paymentMethod`, `dateFrom`, `dateTo`, `sortBy`, `sortDirection`, `page`, and `pageSize`.
+Authenticated user routes include `GET /categories`, `GET/POST /expenses`, `PATCH/DELETE /expenses/:id`, and `GET/PUT /budgets/:month`. Expense lists accept `month`, `search`, `categoryId`, `paymentMethod`, `dateFrom`, `dateTo`, `sortBy`, `sortDirection`, `page`, and `pageSize`.
 
 Admin-only routes include `GET /admin/insights`, plus `POST /categories`, `PATCH /categories/:id`, and `DELETE /categories/:id`. Deleting a category safely reassigns its expenses to the system `Uncategorized` category.
