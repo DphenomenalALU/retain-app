@@ -7,7 +7,7 @@ INSERT INTO categories (id, name, color, icon, is_system) VALUES
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO users (id, name, email, password_hash, role) VALUES
-  ('usr_001', 'Maya Ibrahim', 'maya@retain.app', '$2b$10$day1seedplaceholder', 'admin')
+  ('usr_001', 'Maya Ibrahim', 'maya@retain.app', '$2b$10$6NUrMBCNbHBzvdoQHQCHqOqkpm4K79s0XVmJqIrBbfKTyMunqDP6C', 'admin')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO budgets (id, user_id, month, amount) VALUES
