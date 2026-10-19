@@ -13,6 +13,7 @@ import ExpenseDetailDrawer from "../components/expenses/ExpenseDetailDrawer";
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 const monthLabel = (month: string) => new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(new Date(`${month}-01T12:00:00`));
 const todayLabel = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }).format(new Date());
+const greeting = () => { const hour = new Date().getHours(); return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"; };
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -37,7 +38,7 @@ export default function DashboardPage() {
   const categoryRows = Object.entries(categoryTotals).sort(([, left], [, right]) => right - left);
 
   return <div className="page-stack">
-    <section className="welcome-row"><div><p className="eyebrow">{todayLabel}</p><h1>Good morning, {user?.name.split(" ")[0] ?? "there"}.</h1><p className="page-lede">A clear view of your spending this month.</p></div><Link className="button button--primary" to="/expenses?new=1"><Icon name="plus" size={18} />Record expense</Link></section>
+    <section className="welcome-row"><div><p className="eyebrow">{todayLabel}</p><h1>{greeting()}, {user?.name.trim().split(/\s+/)[0] ?? "there"}.</h1><p className="page-lede">A clear view of your spending this month.</p></div><Link className="button button--primary" to="/expenses?new=1"><Icon name="plus" size={18} />Record expense</Link></section>
     <section className="dashboard-grid" aria-label={`${selectedMonthLabel} spending overview`}>
       <div className="dashboard-primary">
         <div className="section-heading dashboard-primary__heading"><div><h2>Month snapshot</h2></div><MonthPicker ariaLabel="Select dashboard month" onChange={setSelectedMonth} value={selectedMonth} /></div>

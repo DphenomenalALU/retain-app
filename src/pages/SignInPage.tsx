@@ -23,7 +23,6 @@ export default function SignInPage() {
       else await signIn(email, password);
       navigate("/");
     } catch {
-      // AuthContext exposes the user-facing error.
     } finally {
       setSubmitting(false);
     }

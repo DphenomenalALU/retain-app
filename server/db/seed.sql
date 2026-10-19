@@ -13,3 +13,13 @@ ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email, pas
 INSERT INTO budgets (id, user_id, month, amount) VALUES
   ('bud_001', 'usr_001', '2026-10-01', 1200.00)
 ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO expenses (id, user_id, category_id, title, amount, expense_date, payment_method, note) VALUES
+  ('exp_001', 'usr_001', 'cat_001', 'Market groceries', 86.40, '2026-10-12', 'Card', 'Weekly staples'),
+  ('exp_002', 'usr_001', 'cat_002', 'Ride to the studio', 18.50, '2026-10-11', 'Transfer', NULL),
+  ('exp_003', 'usr_001', 'cat_003', 'Home internet', 52.00, '2026-10-10', 'Card', NULL),
+  ('exp_004', 'usr_001', 'cat_004', 'Pilates class', 34.00, '2026-10-08', 'Card', NULL),
+  ('exp_005', 'usr_001', 'cat_001', 'Sunday lunch', 42.75, '2026-10-05', 'Cash', NULL),
+  ('exp_006', 'usr_001', 'cat_004', 'Pharmacy refill', 27.20, '2026-10-03', 'Card', NULL),
+  ('exp_007', 'usr_001', 'cat_002', 'Parking', 12.00, '2026-10-02', 'Cash', NULL)
+ON CONFLICT (id) DO NOTHING;
