@@ -13,8 +13,8 @@ Retain is a personal expense and monthly budget manager built with React, TypeSc
 
 - Real sign-up, sign-in, sign-out, session persistence, and protected routes
 - User-owned expense CRUD with validation and destructive-action confirmation
-- Redux-managed search, category/payment filters, sorting, and pagination
-- Monthly budget read/update flow with live progress calculations
+- Redux-managed search, category/payment/amount filters, sorting, and pagination
+- Monthly budget read/update flow with live progress calculations and clear on-track, approaching-limit, on-target, and over-budget states
 - Responsive finance dashboard and mobile expense workflow
 - Admin-only platform insights, category CRUD, and safe category reassignment
 - Date-range filtering alongside search, category, payment, sorting, and pagination
@@ -226,6 +226,6 @@ The API is rooted at `/api`. JSON requests use `Content-Type: application/json`.
 | `PATCH` / `DELETE` | `/api/categories/:id` | Admin only | Update or delete a category; deleted expenses move to `Uncategorized`. |
 | `DELETE` | `/api/users/:id` | Admin only | Delete another user and their owned expenses/budgets. The current admin cannot delete itself. |
 
-Expense list requests support `month`, `search`, `categoryId`, `paymentMethod`, `dateFrom`, `dateTo`, `sortBy`, `sortDirection`, `page`, and `pageSize`. List responses use an `items` array plus pagination metadata: `page`, `pageSize`, `total`, and `totalPages`.
+Expense list requests support `month`, `search`, `categoryId`, `paymentMethod`, `dateFrom`, `dateTo`, `minAmount`, `maxAmount`, `sortBy`, `sortDirection`, `page`, and `pageSize`. `minAmount` and `maxAmount` are inclusive non-negative amount filters; the API rejects a range where the minimum exceeds the maximum. List responses use an `items` array plus pagination metadata: `page`, `pageSize`, `total`, and `totalPages`.
 
 The authorization model is intentionally split: React Context owns the client session, role, sign-in, sign-up, sign-out, and protected routes; the API verifies the JWT on every protected request, enforces user ownership for expenses and budgets, and applies admin checks to insights, category mutations, and user deletion. Redux owns expense search, filtering, sorting, pagination, and server-backed list state.

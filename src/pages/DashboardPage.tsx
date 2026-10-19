@@ -9,6 +9,8 @@ import { getIconName, Icon } from "../components/ui/Icon";
 import { categoryColors } from "../data/categoryPalette";
 import MonthPicker from "../components/ui/MonthPicker";
 import ExpenseDetailDrawer from "../components/expenses/ExpenseDetailDrawer";
+import { currentMonth } from "../lib/date";
+import { getBudgetStatus } from "../lib/budget";
 
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 const monthLabel = (month: string) => new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(new Date(`${month}-01T12:00:00`));
@@ -19,7 +21,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const [selectedMonth, setSelectedMonth] = useState("2026-10");
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const { summaryItems: expenses, summaryLoading: loading } = useAppSelector((state) => state.expenses);
   const budget = useAppSelector((state) => state.budget.current);
@@ -29,10 +31,8 @@ export default function DashboardPage() {
 
   const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
   const remaining = budget.amount - total;
-  const budgetRatio = budget.amount > 0 ? total / budget.amount : total > 0 ? 1 : 0;
-  const budgetTone = budgetRatio > 1 ? "danger" : budgetRatio === 1 ? "positive" : "neutral";
-  const budgetStatus = budgetRatio > 1 ? "Over budget" : budgetRatio === 1 ? "On target" : "On track";
-  const budgetBarColor = budgetTone === "danger" ? "var(--danger)" : budgetTone === "positive" ? "var(--trend)" : "var(--primary)";
+  const budgetState = getBudgetStatus(total, budget.amount);
+  const budgetBarColor = budgetState.tone === "danger" ? "var(--danger)" : budgetState.tone === "positive" ? "var(--trend)" : budgetState.tone === "warning" ? "var(--warning)" : "var(--primary)";
   const highest = expenses.length ? expenses.reduce((max, expense) => expense.amount > max.amount ? expense : max, expenses[0]) : null;
   const categoryTotals = expenses.reduce<Record<string, number>>((totals, expense) => { totals[expense.category.name] = (totals[expense.category.name] ?? 0) + expense.amount; return totals; }, {});
   const categoryRows = Object.entries(categoryTotals).sort(([, left], [, right]) => right - left);
@@ -44,7 +44,7 @@ export default function DashboardPage() {
         <div className="section-heading dashboard-primary__heading"><div><h2>Month snapshot</h2></div><MonthPicker ariaLabel="Select dashboard month" onChange={setSelectedMonth} value={selectedMonth} /></div>
         <div className="panel budget-panel budget-panel--overview">
           <div className="budget-overview__top"><p className="budget-overview__label">Spent this month</p><Link className="button button--quiet" to="/budgets">Manage budget <Icon name="arrow" size={14} /></Link></div>
-          <div className="budget-overview__meter"><div className="budget-figure"><strong>{money.format(total)}</strong><span>of {money.format(budget.amount)}</span></div><div className="progress-track"><span style={{ background: budgetBarColor, width: `${budget.amount ? Math.min((total / budget.amount) * 100, 100) : 0}%` }} /></div><div className="budget-meta"><span>{budget.amount ? Math.round((total / budget.amount) * 100) : 0}% of budget used</span><span className={`budget-status budget-status--${budgetTone}`}><span className="budget-status__dot" />{budgetStatus}</span></div></div>
+          <div className="budget-overview__meter"><div className="budget-figure"><strong>{money.format(total)}</strong><span>of {money.format(budget.amount)}</span></div><div className="progress-track"><span style={{ background: budgetBarColor, width: `${budget.amount ? Math.min(budgetState.ratio * 100, 100) : 0}%` }} /></div><div className="budget-meta"><span>{budget.amount ? `${budgetState.percentage}% of budget used` : "Set a budget to track progress"}</span><span className={`budget-status budget-status--${budgetState.tone}`}><span className="budget-status__dot" />{budgetState.label}</span></div></div>
           <div className="budget-support-grid"><div className="budget-support-stat"><span>Remaining</span><strong>{money.format(remaining)}</strong><small>available this month</small></div><div className="budget-support-stat"><span>Largest expense</span><strong>{money.format(highest?.amount ?? 0)}</strong><small>{highest ? `${highest.title} · ${highest.category.name}` : "No expenses yet"}</small></div></div>
           {loading && <span className="budget-refreshing"><span className="loading-orb" />Refreshing activity</span>}
         </div>

@@ -1,14 +1,21 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { apiRequest } from "../../lib/api";
+import { currentMonth } from "../../lib/date";
 import type { Expense, ExpenseListResponse } from "../../types/retain";
 import type { RootState } from "../store";
 
-export type ExpenseFilters = { search: string; categoryId: string; paymentMethod: string; dateFrom: string; dateTo: string; sortBy: "date" | "amount"; sortDirection: "asc" | "desc"; page: number; pageSize: number };
+export type ExpenseFilters = { search: string; categoryId: string; paymentMethod: string; dateFrom: string; dateTo: string; minAmount: string; maxAmount: string; sortBy: "date" | "amount"; sortDirection: "asc" | "desc"; page: number; pageSize: number };
+type TextFilterKey = "search" | "categoryId" | "paymentMethod" | "dateFrom" | "dateTo" | "minAmount" | "maxAmount";
+export type ExpenseFilterAction =
+  | { key: TextFilterKey; value: string }
+  | { key: "sortBy"; value: ExpenseFilters["sortBy"] }
+  | { key: "sortDirection"; value: ExpenseFilters["sortDirection"] }
+  | { key: "page" | "pageSize"; value: number };
 type ExpensesState = { items: Expense[]; summaryItems: Expense[]; total: number; totalPages: number; selectedMonth: string; filters: ExpenseFilters; loading: boolean; summaryLoading: boolean; error: string | null };
 
 const initialState: ExpensesState = {
-  items: [], summaryItems: [], total: 0, totalPages: 1, selectedMonth: "2026-10", loading: false, summaryLoading: false, error: null,
-  filters: { search: "", categoryId: "", paymentMethod: "", dateFrom: "", dateTo: "", sortBy: "date", sortDirection: "desc", page: 1, pageSize: 8 },
+  items: [], summaryItems: [], total: 0, totalPages: 1, selectedMonth: currentMonth(), loading: false, summaryLoading: false, error: null,
+  filters: { search: "", categoryId: "", paymentMethod: "", dateFrom: "", dateTo: "", minAmount: "", maxAmount: "", sortBy: "date", sortDirection: "desc", page: 1, pageSize: 8 },
 };
 
 export const fetchExpenses = createAsyncThunk<ExpenseListResponse, void, { state: RootState; rejectValue: string }>("expenses/fetch", async (_, thunkApi) => {
@@ -19,6 +26,8 @@ export const fetchExpenses = createAsyncThunk<ExpenseListResponse, void, { state
   if (filters.paymentMethod) params.set("paymentMethod", filters.paymentMethod);
   if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
   if (filters.dateTo) params.set("dateTo", filters.dateTo);
+  if (filters.minAmount) params.set("minAmount", filters.minAmount);
+  if (filters.maxAmount) params.set("maxAmount", filters.maxAmount);
   try { return await apiRequest<ExpenseListResponse>(`/expenses?${params}`); }
   catch (error) { return thunkApi.rejectWithValue(error instanceof Error ? error.message : "Unable to load expenses."); }
 });
@@ -28,7 +37,13 @@ const expensesSlice = createSlice({
   name: "expenses", initialState,
   reducers: {
     setSelectedMonth(state, action: PayloadAction<string>) { state.selectedMonth = action.payload; },
-    setFilter(state, action: PayloadAction<{ key: keyof ExpenseFilters; value: string | number }>) { const { key, value } = action.payload; state.filters[key] = value as never; if (key !== "page" && key !== "pageSize") state.filters.page = 1; },
+    setFilter(state, action: PayloadAction<ExpenseFilterAction>) {
+      if (action.payload.key === "page" || action.payload.key === "pageSize") state.filters[action.payload.key] = action.payload.value;
+      else if (action.payload.key === "sortBy") state.filters.sortBy = action.payload.value;
+      else if (action.payload.key === "sortDirection") state.filters.sortDirection = action.payload.value;
+      else state.filters[action.payload.key as TextFilterKey] = action.payload.value as string;
+      if (action.payload.key !== "page" && action.payload.key !== "pageSize") state.filters.page = 1;
+    },
     resetFilters(state) { state.filters = initialState.filters; },
     upsertExpense(state, action: PayloadAction<Expense>) { const index = state.items.findIndex((item) => item.id === action.payload.id); if (index >= 0) state.items[index] = action.payload; else state.items.unshift(action.payload); state.total = state.items.length; },
     removeExpense(state, action: PayloadAction<string>) { state.items = state.items.filter((item) => item.id !== action.payload); state.total = Math.max(state.total - 1, 0); },

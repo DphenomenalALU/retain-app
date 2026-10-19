@@ -21,7 +21,9 @@ export default function AdminPage() {
   const [form, setForm] = useState<CategoryForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<AdminCategory | null>(null);
   const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [copiedUserId, setCopiedUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,8 +74,12 @@ export default function AdminPage() {
     setForm({ name: category.name, color: category.color, icon: getIconName(category.icon) });
   };
 
-  const deleteCategory = async (category: AdminCategory) => {
-    if (!window.confirm(`Delete “${category.name}”? Existing expenses will move to Uncategorized.`)) return;
+  const requestDeleteCategory = (category: AdminCategory) => setCategoryToDelete(category);
+
+  const confirmDeleteCategory = async () => {
+    if (!categoryToDelete) return;
+    const category = categoryToDelete;
+    setDeletingCategoryId(category.id);
     setError(null);
     try {
       await apiRequest<{ ok: boolean }>(`/categories/${category.id}`, { method: "DELETE" });
@@ -81,9 +87,12 @@ export default function AdminPage() {
         setEditingId(null);
         setForm(emptyForm);
       }
+      setCategoryToDelete(null);
       await loadAdmin();
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to delete category.");
+    } finally {
+      setDeletingCategoryId(null);
     }
   };
 
@@ -144,12 +153,13 @@ export default function AdminPage() {
           <button className="button button--primary" disabled={saving} type="submit">{saving ? "Saving…" : editingId ? "Save changes" : "Add category"}</button>
           {editingId && <button className="button button--quiet" onClick={() => { setEditingId(null); setForm(emptyForm); }} type="button">Cancel</button>}
         </form>
-        <div className="admin-list">{categories.map((category) => { const palette = categoryColors(category); return <div className="admin-row" key={category.id}><span className="admin-category-icon" style={{ color: palette.foreground, background: palette.background, border: `1px solid ${palette.border}` }}><Icon name={getIconName(category.icon)} size={17} /></span><strong>{category.name}</strong><span>{category.expenseCount} {category.expenseCount === 1 ? "expense" : "expenses"}</span>{category.isSystem ? <span className="system-label">System</span> : <div className="table-actions"><button aria-label={`Edit ${category.name}`} onClick={() => editCategory(category)} type="button">Edit</button><button aria-label={`Delete ${category.name}`} onClick={() => void deleteCategory(category)} type="button">Delete</button></div>}</div>; })}</div>
+        <div className="admin-list">{categories.map((category) => { const palette = categoryColors(category); return <div className="admin-row" key={category.id}><span className="admin-category-icon" style={{ color: palette.foreground, background: palette.background, border: `1px solid ${palette.border}` }}><Icon name={getIconName(category.icon)} size={17} /></span><strong>{category.name}</strong><span>{category.expenseCount} {category.expenseCount === 1 ? "expense" : "expenses"}</span>{category.isSystem ? <span className="system-label">System</span> : <div className="table-actions"><button aria-label={`Edit ${category.name}`} onClick={() => editCategory(category)} type="button">Edit</button><button aria-label={`Delete ${category.name}`} onClick={() => requestDeleteCategory(category)} type="button">Delete</button></div>}</div>; })}</div>
       </div></section>
     <section className="panel admin-wide-panel"><div className="panel-heading"><div><h3>Spending by category</h3><p>Platform-wide value and volume.</p></div></div><div className="admin-bars">{insights.spendingByCategory.map((item) => { const palette = categoryColors(item.category); const share = totalSpend ? Math.round((item.total / totalSpend) * 100) : 0; return <div className="admin-bar-row" key={item.category.id}><div className="admin-bar-label">{categoryFor(item.category)}<div className="admin-bar-value"><strong>{money.format(item.total)}</strong><span>{share}%</span></div></div><div className="admin-bar-track"><span style={{ background: palette.foreground, width: `${(item.total / maxSpend) * 100}%` }} /></div><small>{item.count} {item.count === 1 ? "expense" : "expenses"}</small></div>; })}</div></section>
 
     <section className="admin-grid"><div className="panel"><div className="panel-heading"><div><h3>Category usage</h3><p>Most and least-used labels by record count.</p></div></div><div className="usage-columns"><div><p className="mini-heading">Top 5</p>{insights.topCategories.map((item) => { const share = insights.totals.expenses ? Math.round((item.count / insights.totals.expenses) * 100) : 0; return <div className="usage-row" key={`top-${item.category.id}`}>{categoryFor(item.category)}<strong>{item.count}<small>{share}%</small></strong></div>; })}</div><div><p className="mini-heading">Bottom 5</p>{insights.bottomCategories.map((item) => { const share = insights.totals.expenses ? Math.round((item.count / insights.totals.expenses) * 100) : 0; return <div className="usage-row" key={`bottom-${item.category.id}`}>{categoryFor(item.category)}<strong>{item.count}<small>{share}%</small></strong></div>; })}</div></div></div><div className="panel"><div className="panel-heading"><div><h3>Recently registered</h3><p>Newest accounts.</p></div></div><div className="admin-people">{insights.recentUsers.map((user) => <div className="person-row admin-user-row" key={user.id}><span className="avatar">{initials(user.name)}</span><div><strong>{user.name}</strong><small>{user.email}</small></div><time dateTime={user.createdAt}>{date(user.createdAt)}</time><div className="person-row__actions"><a className="person-row__action" href={`mailto:${user.email}`}>Email</a><button className="person-row__action" onClick={() => void copyEmail(user)} type="button">{copiedUserId === user.id ? "Copied" : "Copy email"}</button>{user.role !== "admin" && <button className="person-row__action person-row__action--danger" onClick={() => void deleteUser(user)} type="button">Delete</button>}</div></div>)}</div></div></section>
     <ExpenseDetailDrawer expense={selectedExpense} onClose={() => setSelectedExpense(null)} />
-    <ConfirmDialog busy={Boolean(deletingUserId)} confirmLabel="Remove account" description={userToDelete ? `${userToDelete.name}'s expenses and budgets will also be removed.` : "This account and its financial records will be removed."} onCancel={() => setUserToDelete(null)} onConfirm={() => void confirmDeleteUser()} open={Boolean(userToDelete)} title={userToDelete ? `Remove ${userToDelete.name}'s account?` : "Remove account?"} />
+    <ConfirmDialog busy={Boolean(deletingCategoryId)} busyLabel="Deleting…" cancelLabel="Keep category" confirmLabel="Delete category" description={categoryToDelete ? `Existing expenses will move to Uncategorized when “${categoryToDelete.name}” is deleted.` : "Existing expenses will move to Uncategorized."} eyebrow="Category action" onCancel={() => setCategoryToDelete(null)} onConfirm={() => void confirmDeleteCategory()} open={Boolean(categoryToDelete)} title={categoryToDelete ? `Delete “${categoryToDelete.name}”?` : "Delete category?"} />
+    <ConfirmDialog busy={Boolean(deletingUserId)} busyLabel="Removing…" cancelLabel="Keep account" confirmLabel="Remove account" description={userToDelete ? `${userToDelete.name}'s expenses and budgets will also be removed.` : "This account and its financial records will be removed."} eyebrow="Account action" onCancel={() => setUserToDelete(null)} onConfirm={() => void confirmDeleteUser()} open={Boolean(userToDelete)} title={userToDelete ? `Remove ${userToDelete.name}'s account?` : "Remove account?"} />
   </div>;
 }

@@ -1,1 +1,1 @@
-export default function StatusPill({ children, tone = "positive" }: { children: string; tone?: "positive" | "warning" | "neutral" }) { return <span className={`status-pill status-pill--${tone}`}><span className="status-pill__dot" />{children}</span>; }
+export default function StatusPill({ children, tone = "positive" }: { children: string; tone?: "positive" | "warning" | "neutral" | "danger" }) { return <span className={`status-pill status-pill--${tone}`}><span className="status-pill__dot" />{children}</span>; }

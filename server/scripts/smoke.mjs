@@ -37,6 +37,10 @@ try {
   assert(createdExpense.status === 201, "expense creation failed");
   const filtered = await call("/expenses?month=2026-10&dateFrom=2026-10-16&dateTo=2026-10-16", { headers: { Authorization: `Bearer ${adminToken}` } });
   assert(filtered.status === 200 && filtered.body.items.some((item) => item.title === "Smoke reassignment"), "date filtering failed");
+  const amountFiltered = await call("/expenses?minAmount=10&maxAmount=15", { headers: { Authorization: `Bearer ${adminToken}` } });
+  assert(amountFiltered.status === 200 && amountFiltered.body.items.every((item) => item.amount >= 10 && item.amount <= 15), "amount filtering failed");
+  const invalidAmountRange = await call("/expenses?minAmount=15&maxAmount=10", { headers: { Authorization: `Bearer ${adminToken}` } });
+  assert(invalidAmountRange.status === 422, "invalid amount range was not rejected");
   const budget = await call("/budgets/2026-10", { method: "PUT", ...json({ amount: 900 }, adminToken) });
   assert(budget.status === 200 && budget.body.amount === 900, "budget update failed");
   const updatedCategory = await call(`/categories/${categoryId}`, { method: "PATCH", ...json({ name: "Smoke Updated", color: "#654321", icon: "chart" }, adminToken) });
@@ -47,7 +51,7 @@ try {
   assert(afterDelete.status === 200 && afterDelete.body.items[0]?.category.name === "Uncategorized", "category reassignment failed");
   const userExpenses = await call("/expenses", { headers: { Authorization: `Bearer ${userAuth.body.token}` } });
   assert(userExpenses.status === 200 && userExpenses.body.total === 0, "expense ownership boundary failed");
-  console.log("Retain smoke test passed: auth, admin authorization, ownership, budgets, category CRUD, reassignment, and month/date filtering.");
+  console.log("Retain smoke test passed: auth, admin authorization, ownership, budgets, category CRUD, reassignment, month/date filtering, and amount filtering.");
 } catch (error) {
   console.error(`Retain smoke test failed: ${error instanceof Error ? error.message : String(error)}`);
   process.exitCode = 1;

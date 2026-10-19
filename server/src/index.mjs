@@ -34,6 +34,7 @@ const adminUserView = (user) => ({ ...userView(user), createdAt: user.createdAt 
 const tokenFor = (user) => jwt.sign({ sub: user.id }, jwtSecret, { expiresIn: "7d" });
 const validMonth = (value) => typeof value === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
 const validDate = (value) => { if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false; const parsed = new Date(`${value}T00:00:00Z`); return parsed.toISOString().slice(0, 10) === value; };
+const amountFilter = (value, label) => { if (value === null || value === "") return null; const parsed = Number(value); if (!Number.isFinite(parsed) || parsed < 0) throw new HttpError(422, `${label} must be a non-negative amount.`, "INVALID_AMOUNT_FILTER"); return parsed; };
 const categoryView = (category) => ({ id: category.id, name: category.name, color: category.color, icon: category.icon ?? defaultCategoryIcons[category.id] ?? "receipt" });
 const findCategory = (categories, idValue) => categories.find((category) => category.id === idValue) ?? categories.at(-1);
 const expenseView = (expense, categories) => { const category = findCategory(categories, expense.categoryId); return { id: expense.id, title: expense.title, amount: Number(expense.amount), category: categoryView(category), date: expense.date, paymentMethod: expense.paymentMethod, note: expense.note }; };
@@ -75,6 +76,11 @@ const listExpenses = async (userId, url, categories) => {
   if (dateFrom) { if (!validDate(dateFrom)) throw new HttpError(422, "Start date is invalid.", "INVALID_DATE"); rows = rows.filter((expense) => expense.date >= dateFrom); }
   const dateTo = url.searchParams.get("dateTo");
   if (dateTo) { if (!validDate(dateTo)) throw new HttpError(422, "End date is invalid.", "INVALID_DATE"); rows = rows.filter((expense) => expense.date <= dateTo); }
+  const minAmount = amountFilter(url.searchParams.get("minAmount"), "Minimum amount");
+  const maxAmount = amountFilter(url.searchParams.get("maxAmount"), "Maximum amount");
+  if (minAmount !== null && maxAmount !== null && minAmount > maxAmount) throw new HttpError(422, "Minimum amount cannot exceed maximum amount.", "INVALID_AMOUNT_RANGE");
+  if (minAmount !== null) rows = rows.filter((expense) => Number(expense.amount) >= minAmount);
+  if (maxAmount !== null) rows = rows.filter((expense) => Number(expense.amount) <= maxAmount);
   const sortBy = url.searchParams.get("sortBy") === "amount" ? "amount" : "date";
   const direction = url.searchParams.get("sortDirection") === "asc" ? 1 : -1;
   rows.sort((a, b) => { const left = sortBy === "amount" ? Number(a.amount) : a.date; const right = sortBy === "amount" ? Number(b.amount) : b.date; return (left > right ? 1 : left < right ? -1 : 0) * direction; });
