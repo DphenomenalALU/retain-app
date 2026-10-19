@@ -2,7 +2,7 @@
 
 Retain is a personal expense and monthly budget manager built with React, TypeScript, Vite, Redux Toolkit, and a REST API.
 
-## Current checkpoint: Railway-ready release candidate
+## What’s included
 
 - Real sign-up, sign-in, sign-out, session persistence, and protected routes
 - User-owned expense CRUD with validation and destructive-action confirmation
@@ -54,8 +54,8 @@ Check `http://localhost:4000/api/health`.
 Demo admin credentials:
 
 ```text
-maya@retain.app
-password
+emmanuel@retain.app
+12345678
 ```
 
 For hosted API configuration, provide `DATABASE_URL`, a strong `JWT_SECRET`, and `CORS_ORIGIN` set to the deployed frontend origin. Railway supplies the PostgreSQL connection string to the API service through a private reference variable. The API initializes the schema on startup and seeds the demo admin only when it is missing.
@@ -63,8 +63,9 @@ For hosted API configuration, provide `DATABASE_URL`, a strong `JWT_SECRET`, and
 ### Deployment shape
 
 - Railway: API service rooted at `server/`, backed by the managed PostgreSQL service in the `Retain` project.
-- Vercel: Vite frontend with `VITE_API_URL=https://<railway-api-domain>/api` and an SPA fallback for `/expenses`, `/budgets`, and `/admin`.
-- Live frontend: https://react-redux-guided-activity.vercel.app
+- GitHub repository: https://github.com/DphenomenalALU/retain-app
+- Vercel project: `retain-app` — Vite frontend with `VITE_API_URL=https://<railway-api-domain>/api` and an SPA fallback for `/expenses`, `/budgets`, and `/admin`.
+- Live frontend: https://retain-app-green.vercel.app
 - Live API health check: https://retain-api-production.up.railway.app/api/health
 
 Deployment environment examples live in [`.env.example`](./.env.example) and [`server/.env.example`](./server/.env.example). Never commit real secrets. On Railway, `DATABASE_URL` is linked to the Postgres service, `JWT_SECRET` is generated privately, and `CORS_ORIGIN` is locked to the Vercel production URL. On Vercel, `VITE_API_URL` is set to the Railway API URL including `/api` for production, preview, and development targets.

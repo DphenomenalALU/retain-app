@@ -1,6 +1,6 @@
 import type { Budget, Expense, ExpenseCategory, User } from "../types/retain";
 
-export const demoUser: User = { id: "usr_001", name: "Maya Ibrahim", email: "maya@retain.app", role: "admin" };
+export const demoUser: User = { id: "usr_001", name: "Emmanuel Annor", email: "emmanuel@retain.app", role: "admin" };
 export const categories: ExpenseCategory[] = [
   { id: "cat_001", name: "Food & dining", color: "#eeb390", icon: "utensils", count: 12 },
   { id: "cat_002", name: "Transport", color: "#bfdbfe", icon: "car", count: 8 },

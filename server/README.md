@@ -10,7 +10,7 @@ npm run start
 
 Then open `http://localhost:4000/api/health`.
 
-Demo admin credentials: `maya@retain.app` / `password`.
+Demo admin credentials: `emmanuel@retain.app` / `12345678`.
 
 Production API: `https://retain-api-production.up.railway.app`.
 

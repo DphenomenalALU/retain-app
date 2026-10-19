@@ -30,6 +30,9 @@ const seededExpenses = [
   ["exp_007", "Parking", 12, "cat_002", "2026-10-02", "Cash", null],
 ];
 
+const demoAdmin = { id: "usr_001", name: "Emmanuel Annor", email: "emmanuel@retain.app", role: "admin" };
+const demoAdminPassword = "12345678";
+
 const emptyData = () => ({ users: [], categories: structuredClone(seededCategories), expenses: [], budgets: [] });
 const makeId = (prefix) => `${prefix}_${randomUUID().slice(0, 8)}`;
 
@@ -88,12 +91,15 @@ const jsonStore = (dataFile) => {
   const save = () => writeFileSync(dataFile, JSON.stringify(data, null, 2));
   const seed = () => {
     if (!data.categories.length) data.categories.push(...structuredClone(seededCategories));
-    if (!data.users.some((user) => user.email === "maya@retain.app")) {
-      data.users.push({ id: "usr_001", name: "Maya Ibrahim", email: "maya@retain.app", passwordHash: bcrypt.hashSync("password", 10), role: "admin", createdAt: new Date().toISOString() });
+    const existingDemoAdmin = data.users.find((user) => user.id === demoAdmin.id || user.email === "maya@retain.app" || user.email === demoAdmin.email);
+    if (!existingDemoAdmin) {
+      data.users.push({ ...demoAdmin, passwordHash: bcrypt.hashSync(demoAdminPassword, 10), createdAt: new Date().toISOString() });
       data.budgets.push({ id: "bud_001", userId: "usr_001", month: "2026-10", amount: 1200 });
       data.expenses.push(...seededExpenses.map(([id, title, amount, categoryId, date, paymentMethod, note]) => ({ id, userId: "usr_001", title, amount, categoryId, date, paymentMethod, note })));
-      save();
+    } else {
+      Object.assign(existingDemoAdmin, { ...demoAdmin, passwordHash: bcrypt.hashSync(demoAdminPassword, 10), createdAt: existingDemoAdmin.createdAt ?? new Date().toISOString() });
     }
+    save();
   };
   seed();
   return {
@@ -124,9 +130,9 @@ const jsonStore = (dataFile) => {
 const postgresStore = async (connectionString) => {
   const pool = new Pool({ connectionString, ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined, max: 10 });
   await pool.query(schemaSql);
-  const passwordHash = bcrypt.hashSync("password", 10);
+  const passwordHash = bcrypt.hashSync(demoAdminPassword, 10);
   await pool.query("INSERT INTO categories (id, name, color, icon, is_system) VALUES ($1, $2, $3, $4, $5), ($6, $7, $8, $9, $10), ($11, $12, $13, $14, $15), ($16, $17, $18, $19, $20), ($21, $22, $23, $24, $25) ON CONFLICT (id) DO NOTHING", seededCategories.flatMap((category) => [category.id, category.name, category.color, category.icon, category.isSystem]));
-  await pool.query("INSERT INTO users (id, name, email, password_hash, role) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (email) DO NOTHING", ["usr_001", "Maya Ibrahim", "maya@retain.app", passwordHash, "admin"]);
+  await pool.query("INSERT INTO users (id, name, email, password_hash, role) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, email = EXCLUDED.email, password_hash = EXCLUDED.password_hash, role = EXCLUDED.role", [demoAdmin.id, demoAdmin.name, demoAdmin.email, passwordHash, demoAdmin.role]);
   const { rows: expenseCount } = await pool.query("SELECT COUNT(*)::int AS count FROM expenses");
   if (expenseCount[0].count === 0) {
     await pool.query("INSERT INTO budgets (id, user_id, month, amount) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING", ["bud_001", "usr_001", "2026-10-01", 1200]);
