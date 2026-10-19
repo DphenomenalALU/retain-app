@@ -1,4 +1,5 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000/api";
+export const AUTH_EXPIRED_EVENT = "retain:auth-expired";
 
 export class ApiError extends Error {
   status: number;
@@ -16,6 +17,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     },
   });
   if (!response.ok) {
+    if (response.status === 401 && token) window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
     const body = await response.json().catch(() => null) as { error?: string } | null;
     throw new ApiError(body?.error ?? "The request could not be completed.", response.status);
   }

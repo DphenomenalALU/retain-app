@@ -19,9 +19,10 @@ Retain is a personal expense and monthly budget manager built with React, TypeSc
 - Admin-only platform insights, category CRUD, and safe category reassignment
 - Date-range filtering alongside search, category, payment, sorting, and pagination
 - Production configuration examples, payload limits, cache headers, and CI quality checks
-- Repeatable isolated API smoke test covering auth, ownership, budgets, and admin workflows
+- Server-backed monthly summaries, reliable edit deep links, stale-request protection, and session reset boundaries
+- Repeatable isolated API smoke test covering auth, ownership, budgets, summaries, validation, and admin workflows
 - Durable local development repository under `server/data/` when `DATABASE_URL` is absent
-- PostgreSQL-backed production repository with schema initialization, seeded demo data, ownership constraints, and indexes
+- PostgreSQL-backed production repository with schema initialization, optional assessment seed data, ownership constraints, and indexes
 - Reduced-motion support, accessible focus states, 44px interaction targets, and mobile navigation
 
 The API keeps the JSON repository as a deterministic local fallback, and automatically uses PostgreSQL whenever `DATABASE_URL` is present. This keeps smoke tests and local onboarding simple without allowing the hosted deployment to silently fall back to a file on an ephemeral filesystem.
@@ -77,16 +78,16 @@ npm run start
 
 Check `http://localhost:4000/api/health`.
 
-Demo admin credentials:
+Local demo admin credentials:
 
 ```text
 emmanuel@retain.app
 12345678
 ```
 
-These credentials are for assessment/demo use only. Do not reuse them for personal financial data or treat them as a production administrator account.
+These credentials exist only for the local JSON repository and assessment/demo use. They are not provisioned when `NODE_ENV=production`.
 
-For hosted API configuration, provide `DATABASE_URL`, a strong `JWT_SECRET`, and `CORS_ORIGIN` set to one or more exact frontend origins. The API requires all three values in production, initializes the PostgreSQL schema on startup, upserts the demo admin identity, and seeds sample financial data only when the database is empty.
+For hosted API configuration, provide `DATABASE_URL`, a strong `JWT_SECRET`, exact `CORS_ORIGIN` values, and private `RETAIN_ADMIN_EMAIL` / `RETAIN_ADMIN_PASSWORD` values. The API requires these values in production, initializes the PostgreSQL schema on startup, provisions the configured admin, and does not load demo records unless `RETAIN_SEED_DEMO=true` is explicitly set.
 
 ## Deploying Retain
 
@@ -120,8 +121,12 @@ The GitHub `main` branch is the source of truth. A push to `main` should trigger
    | `JWT_SECRET` | A long, private random value. Never use the example value. |
    | `CORS_ORIGIN` | One or more exact Vercel origins, comma-separated if needed. For production use `https://retain-app-green.vercel.app`; add a specific preview origin only while testing that preview. Do not add trailing slashes. |
    | `NODE_ENV` | `production` |
+   | `RETAIN_ADMIN_NAME` | Display name for the private production admin account. |
+   | `RETAIN_ADMIN_EMAIL` | Private production admin email. |
+   | `RETAIN_ADMIN_PASSWORD` | Strong private production admin password; never commit it. |
+   | `RETAIN_SEED_DEMO` | `false` for a clean hosted database; only set `true` intentionally for an assessment/demo database. |
 
-   Railway provides `PORT` automatically. The API refuses to start in production unless `DATABASE_URL`, `JWT_SECRET`, and `CORS_ORIGIN` are present. It initializes the PostgreSQL schema and applies the demo seed/migration during startup, so there is no manual SQL step for a normal deploy.
+   Railway provides `PORT` automatically. The API refuses to start in production unless the database, JWT, CORS, and private admin variables are present. It initializes the PostgreSQL schema during startup, so there is no manual SQL step for a normal deploy.
 
 6. Generate or confirm the Railway public domain, then verify it:
 
@@ -142,12 +147,7 @@ The GitHub `main` branch is the source of truth. A push to `main` should trigger
    ```
 
 4. Deploy. The checked-in [`vercel.json`](./vercel.json) already defines the Vite build, `dist` output, and SPA fallback needed for `/expenses`, `/budgets`, and `/admin`.
-5. Open the deployment and test sign-in. The seeded admin account is:
-
-   ```text
-   emmanuel@retain.app
-   12345678
-   ```
+5. Open the deployment and test sign-in with the private production admin values configured on Railway. Do not paste those credentials into the repository or public documentation.
 
    Vercel preview deployments use changing URLs. Before testing a preview against Railway, add that preview’s exact origin to Railway’s comma-separated `CORS_ORIGIN`, redeploy the API, and remove it afterward if it is no longer needed.
 
@@ -169,7 +169,7 @@ npm run test:smoke
 npm run build
 ```
 
-Then sign in through the hosted frontend, create an expense, update the monthly budget, and confirm the dashboard reflects the change after a refresh. For an admin check, open `/admin` with the seeded account and verify category and insight data load.
+Then sign in through the hosted frontend, create an expense, update the monthly budget, and confirm the dashboard reflects the change after a refresh. For an admin check, open `/admin` with the configured production admin and verify category and insight data load.
 
 ### Future deployments
 
@@ -200,7 +200,7 @@ src/
 └── types/             Shared finance domain and admin insight types
 server/
 ├── db/schema.sql      PostgreSQL schema and indexes (manual reference)
-├── db/seed.sql        PostgreSQL demo seed (manual reference)
+├── db/seed.sql        PostgreSQL category seed (manual reference)
 └── src/index.mjs      Authenticated REST API and admin endpoints
 ```
 
@@ -218,7 +218,9 @@ The API is rooted at `/api`. JSON requests use `Content-Type: application/json`.
 | `GET` | `/api/auth/me` | Authenticated | Resolve the current session user. |
 | `POST` | `/api/auth/signout` | Client session | Acknowledge sign-out; the client removes its token. |
 | `GET` | `/api/categories` | Authenticated | List categories; admins also receive usage counts. |
+| `GET` | `/api/dashboard/summary?month=YYYY-MM` | Authenticated | Return complete server-calculated monthly totals, category breakdown, largest expense, and recent expenses. |
 | `GET` / `POST` | `/api/expenses` | Authenticated | List or create expenses owned by the current user. |
+| `GET` | `/api/expenses/:id` | Authenticated owner | Open one owned expense for reliable edit deep links. |
 | `PATCH` / `DELETE` | `/api/expenses/:id` | Authenticated owner | Update or delete only the current user’s expense. |
 | `GET` / `PUT` | `/api/budgets/:month` | Authenticated owner | Read or update the current user’s `YYYY-MM` budget. |
 | `GET` | `/api/admin/insights` | Admin only | Platform totals, category usage, recent expenses, and recent users. |

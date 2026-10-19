@@ -14,24 +14,37 @@ type ExpenseDetailDrawerProps = {
 
 export default function ExpenseDetailDrawer({ expense, onClose, onEdit }: ExpenseDetailDrawerProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
   useEffect(() => {
     if (!expense) return;
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCloseRef.current();
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(drawerRef.current?.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href]") ?? []);
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     document.addEventListener("keydown", onKeyDown);
     requestAnimationFrame(() => closeButtonRef.current?.focus());
     return () => { document.body.style.overflow = previousOverflow; document.removeEventListener("keydown", onKeyDown); previousFocusRef.current?.focus(); previousFocusRef.current = null; };
-  }, [expense, onClose]);
+  }, [expense]);
 
   if (!expense) return null;
 
   return <>
     <button aria-label="Close expense details" className="drawer-backdrop" onClick={onClose} type="button" />
-    <aside aria-labelledby="expense-detail-title" aria-modal="true" className="detail-drawer" role="dialog">
+    <aside aria-labelledby="expense-detail-title" aria-modal="true" className="detail-drawer" ref={drawerRef} role="dialog">
       <header className="detail-drawer__header"><div className="detail-drawer__heading"><Icon name={getIconName(expense.category.icon)} size={15} /><h2>Expense detail</h2></div><button aria-label="Close expense details" className="icon-button icon-button--small" onClick={onClose} ref={closeButtonRef} type="button"><Icon name="close" size={15} /></button></header>
       <div className="detail-drawer__scroll">
         <div className="detail-drawer__hero"><span className="expense-icon expense-icon--large" style={{ color: categoryColors(expense.category).foreground, background: categoryColors(expense.category).background, border: `1px solid ${categoryColors(expense.category).border}` }}><Icon name={getIconName(expense.category.icon)} size={22} /></span><div><h3 id="expense-detail-title">{expense.title}</h3><span className="category-label" style={{ color: categoryColors(expense.category).foreground, background: categoryColors(expense.category).background, borderColor: categoryColors(expense.category).border }}><span className="category-swatch" style={{ background: categoryColors(expense.category).foreground }} /><Icon name={getIconName(expense.category.icon)} size={12} />{expense.category.name}</span></div></div>

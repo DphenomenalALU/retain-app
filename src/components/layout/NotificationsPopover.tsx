@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppSelector } from "../../store/hooks";
+import { useAuth } from "../../context/AuthContext";
 import type { Expense } from "../../types/retain";
 import { getIconName, Icon } from "../ui/Icon";
 import ExpenseDetailDrawer from "../expenses/ExpenseDetailDrawer";
@@ -15,6 +16,7 @@ function uniqueExpenses(expenses: Expense[]) {
 }
 
 export default function NotificationsPopover() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<FeedFilter>("all");
@@ -22,20 +24,25 @@ export default function NotificationsPopover() {
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const anchorRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const expenses = useAppSelector((state) => uniqueExpenses([...state.expenses.summaryItems, ...state.expenses.items]));
+  const items = useAppSelector((state) => state.expenses.items);
+  const recentExpenses = useAppSelector((state) => state.expenses.summary?.recentExpenses ?? []);
+  const summaryTotal = useAppSelector((state) => state.expenses.summary?.total);
   const budget = useAppSelector((state) => state.budget.current);
+  const expenses = useMemo(() => uniqueExpenses([...recentExpenses, ...items]), [items, recentExpenses]);
 
   const activity = useMemo<ActivityItem[]>(() => {
     const expenseItems = expenses.slice(0, 6).map((expense) => ({ id: expense.id, message: `Recorded “${expense.title}”`, meta: `${expense.category.name} · ${dateLabel(expense.date)}`, expense, tone: "expense" as const }));
-    const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const total = summaryTotal ?? expenses.reduce((sum, expense) => sum + expense.amount, 0);
     if (budget.amount > 0 && total > budget.amount) return [{ id: "budget-over", message: "This month is over budget", meta: `${Math.round((total / budget.amount) * 100)}% used · Review your budget`, tone: "budget" }, ...expenseItems];
     return expenseItems;
-  }, [budget.amount, expenses]);
+  }, [budget.amount, expenses, summaryTotal]);
 
   const unread = activity.filter((item) => !readIds.includes(item.id));
   const visible = filter === "unread" ? unread : activity;
   const markRead = (id: string) => setReadIds((current) => current.includes(id) ? current : [...current, id]);
   const markAllRead = () => setReadIds(activity.map((item) => item.id));
+
+  useEffect(() => { setReadIds([]); setFilter("all"); }, [user?.id]);
 
   useEffect(() => {
     if (!open) return;

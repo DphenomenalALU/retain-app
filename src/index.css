@@ -269,6 +269,8 @@ strong { font-weight: 600; }
 .budget-support-stat small { display: -webkit-box; min-height: 1.35em; overflow: hidden; color: var(--subtle); font-size: .58rem; line-height: 1.35; text-overflow: ellipsis; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .budget-refreshing { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; color: var(--subtle); font-size: .58rem; }
 .budget-refreshing .loading-orb { width: 8px; height: 8px; }
+.inline-error { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding: 9px 10px; border: 1px solid #4c2324; border-radius: 6px; color: #e6a6a6; background: #3e1d1e; font-size: .61rem; line-height: 1.35; }
+.inline-error .text-link { flex: 0 0 auto; color: #ffb9b9; }
 .budget-context { display: flex; align-items: center; justify-content: flex-start; gap: 12px; margin: 16px 16px 0; padding: 10px 12px; border-color: var(--line-strong); background: #1b1b1b; }
 .budget-context__label { color: var(--subtle); font-size: .62rem; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; }
 .budget-context .month-picker { flex: 0 0 auto; }
@@ -330,6 +332,9 @@ strong { font-weight: 600; }
 .expense-row { position: relative; display: grid; grid-template-columns: 34px minmax(0, 1fr) 74px 86px 28px; align-items: center; gap: 12px; min-height: 64px; padding: 10px 8px; border-bottom: 1px solid var(--line); border-radius: 6px; transition: background-color 140ms var(--ease-out), border-color 140ms var(--ease-out); }
 .expense-row:last-child { border-bottom: 0; }
 .expense-row:hover, .expense-row:focus-visible { border-color: var(--line-strong); background: rgba(255,255,255,.035); outline: 0; }
+.expense-row__open { display: grid; grid-column: 1 / span 2; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 12px; min-width: 0; padding: 0; border: 0; color: inherit; background: transparent; text-align: left; }
+.expense-row__open:hover, .expense-row__open:focus-visible { outline: 0; }
+.expense-row__open:focus-visible .expense-title strong { color: var(--primary); }
 .expense-icon { display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 34px; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.04); }
 .expense-title { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 3px; }
 .expense-title strong { overflow: hidden; color: var(--foreground); font-size: .75rem; font-weight: 500; letter-spacing: -.005em; text-overflow: ellipsis; white-space: nowrap; }
@@ -359,9 +364,9 @@ tr:hover td { background: rgba(255,255,255,.018); }
 .align-right { text-align: right; }
 .amount-cell { color: var(--soft) !important; font-variant-numeric: tabular-nums; }
 .table-expense { display: flex; align-items: center; gap: 8px; }
-.expense-table-row { cursor: pointer; }
-.expense-table-row:focus-visible { outline: 0; }
-.expense-table-row:focus-visible td { background: rgba(139,124,255,.1); box-shadow: inset 0 1px #8b7cff, inset 0 -1px #8b7cff; }
+.table-expense--button { width: 100%; min-width: 0; padding: 0; border: 0; color: inherit; background: transparent; text-align: left; }
+.table-expense--button:hover strong, .table-expense--button:focus-visible strong { color: var(--primary); }
+.table-expense--button:focus-visible { outline: 0; }
 .table-actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; width: 100%; min-height: 24px; }
 .table-actions button { padding: 3px 0; border: 0; color: var(--subtle); background: transparent; font-size: .6rem; }
 .table-actions button:hover { color: var(--foreground); }

@@ -6,12 +6,14 @@ import ExpenseForm from "./ExpenseForm";
 type ExpenseDialogProps = {
   categories: ExpenseCategory[];
   expense?: Expense | null;
+  loading?: boolean;
   onCancel: () => void;
   onSaved: (expense: Expense) => void;
 };
 
-export default function ExpenseDialog({ categories, expense, onCancel, onSaved }: ExpenseDialogProps) {
+export default function ExpenseDialog({ categories, expense, loading = false, onCancel, onSaved }: ExpenseDialogProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const onCancelRef = useRef(onCancel);
 
@@ -24,6 +26,13 @@ export default function ExpenseDialog({ categories, expense, onCancel, onSaved }
     const previousOverflow = document.body.style.overflow;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onCancelRef.current();
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])") ?? []);
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
     };
 
     document.body.style.overflow = "hidden";
@@ -41,7 +50,7 @@ export default function ExpenseDialog({ categories, expense, onCancel, onSaved }
   return (
     <>
       <button aria-label="Close record dialog" className="expense-modal-backdrop" onClick={onCancel} type="button" />
-      <section aria-labelledby="expense-dialog-title" aria-modal="true" className="expense-dialog" role="dialog">
+      <section aria-labelledby="expense-dialog-title" aria-modal="true" className="expense-dialog" ref={dialogRef} role="dialog">
         <header className="expense-dialog__header">
           <div>
             <p className="eyebrow">{expense ? "Edit record" : "New record"}</p>
@@ -51,7 +60,7 @@ export default function ExpenseDialog({ categories, expense, onCancel, onSaved }
           <button aria-label="Close record dialog" className="icon-button icon-button--small" onClick={onCancel} ref={closeButtonRef} type="button"><Icon name="close" size={16} /></button>
         </header>
         <div className="expense-dialog__scroll">
-          <ExpenseForm categories={categories} expense={expense} onCancel={onCancel} onSaved={onSaved} />
+          {loading ? <div className="loading-inline"><span className="loading-orb" />Opening expense…</div> : <ExpenseForm categories={categories} expense={expense} onCancel={onCancel} onSaved={onSaved} />}
         </div>
       </section>
     </>

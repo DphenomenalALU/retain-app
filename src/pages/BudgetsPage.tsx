@@ -14,19 +14,25 @@ const monthLabel = (month: string) => new Intl.DateTimeFormat("en-US", { month: 
 
 export default function BudgetsPage() {
   const dispatch = useAppDispatch();
-  const expenses = useAppSelector((state) => state.expenses.summaryItems);
-  const { current: budget, saving, error } = useAppSelector((state) => state.budget);
+  const { summary, summaryError } = useAppSelector((state) => state.expenses);
+  const { current: budget, saving, error: budgetError } = useAppSelector((state) => state.budget);
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [editing, setEditing] = useState(false);
   const [amount, setAmount] = useState(String(budget.amount));
+  const [formError, setFormError] = useState<string | null>(null);
   const selectedMonthLabel = monthLabel(selectedMonth);
   useEffect(() => { void dispatch(fetchExpenseSummary(selectedMonth)); void dispatch(fetchBudget(selectedMonth)); }, [dispatch, selectedMonth]);
   useEffect(() => setAmount(String(budget.amount)), [budget.amount]);
-  const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const remaining = budget.amount - total;
-  const budgetState = getBudgetStatus(total, budget.amount);
+  const monthSummary = summary?.month === selectedMonth ? summary : null;
+  const total = monthSummary?.total ?? 0;
+  const activeBudget = budget.month === selectedMonth ? budget : { month: selectedMonth, amount: 0 };
+  const remaining = activeBudget.amount - total;
+  const budgetState = getBudgetStatus(total, activeBudget.amount);
   const save = async () => {
-    const result = await dispatch(saveBudget({ month: selectedMonth, amount: Number(amount) }));
+    const parsedAmount = Number(amount);
+    if (!amount.trim() || !Number.isFinite(parsedAmount) || parsedAmount < 0) { setFormError("Enter a non-negative monthly budget."); return; }
+    setFormError(null);
+    const result = await dispatch(saveBudget({ month: selectedMonth, amount: Number(parsedAmount.toFixed(2)) }));
     if (saveBudget.fulfilled.match(result)) setEditing(false);
   };
 
@@ -34,8 +40,8 @@ export default function BudgetsPage() {
     <section className="welcome-row"><div><p className="eyebrow">The limit</p><h1>Budgets</h1></div><button className="button button--primary" onClick={() => setEditing((open) => !open)} type="button"><Icon name={editing ? "close" : "edit"} size={15} />{editing ? "Close editor" : "Edit budget"}</button></section>
     <section aria-label="Budget period" className="panel budget-context"><span className="budget-context__label">Budget period</span><MonthPicker ariaLabel="Select budget month" onChange={setSelectedMonth} value={selectedMonth} /></section>
     {editing && <section className="panel budget-editor"><div><p className="eyebrow">{selectedMonthLabel}</p><h2>Set your monthly limit</h2><p>Choose a number that gives your plans room to breathe.</p></div><div className="budget-editor__controls"><label>Monthly budget<input min="0" onChange={(event) => setAmount(event.target.value)} step="0.01" type="number" value={amount} /></label><button className="button button--primary" disabled={saving} onClick={() => void save()} type="button">{saving ? "Saving…" : "Save budget"}</button></div></section>}
-    {error && <p className="form-error form-error--banner" role="alert">{error}</p>}
-    <div className="metric-grid metric-grid--wide budget-metrics"><MetricCard detail="current period" icon="wallet" label="Monthly limit" showIcon={false} tone="mint" value={money.format(budget.amount)} /><MetricCard detail={budget.amount ? `${budgetState.percentage}% used` : "No budget set"} icon="trend" label="Spent so far" showIcon={false} tone="sand" value={money.format(total)} /><MetricCard detail="remaining" icon="arrow" label="Still available" showIcon={false} tone="lilac" value={money.format(remaining)} /></div>
-    <section className="panel budget-panel budget-panel--large"><div className="panel-heading"><div><h3>Monthly progress</h3><p>{budgetState.label === "Over budget" ? "Spending is above the limit." : budgetState.label === "Approaching limit" ? "Spending is close to the limit." : budgetState.label === "No budget set" ? "Set a limit to track this month." : "Spending is within the limit."}</p></div><StatusPill tone={budgetState.tone}>{budgetState.label}</StatusPill></div><div className="budget-figure"><strong>{money.format(total)}</strong><span> / {money.format(budget.amount)}</span></div><div className="progress-track"><span className={`progress-track__fill progress-track__fill--${budgetState.tone}`} style={{ width: `${budget.amount ? Math.min(budgetState.ratio * 100, 100) : 0}%` }} /></div><div className="budget-meta"><span>{budget.amount ? `${budgetState.percentage}% used` : "No budget set"}</span><span>{money.format(remaining)} remaining</span></div></section>
+    {(formError || budgetError || summaryError) && <p className="form-error form-error--banner" role="alert">{formError || budgetError || summaryError}</p>}
+    <div className="metric-grid metric-grid--wide budget-metrics"><MetricCard detail="current period" icon="wallet" label="Monthly limit" showIcon={false} tone="mint" value={money.format(activeBudget.amount)} /><MetricCard detail={activeBudget.amount ? `${budgetState.percentage}% used` : "No budget set"} icon="trend" label="Spent so far" showIcon={false} tone="sand" value={money.format(total)} /><MetricCard detail="remaining" icon="arrow" label="Still available" showIcon={false} tone="lilac" value={money.format(remaining)} /></div>
+    <section className="panel budget-panel budget-panel--large"><div className="panel-heading"><div><h3>Monthly progress</h3><p>{budgetState.label === "Over budget" ? "Spending is above the limit." : budgetState.label === "Approaching limit" ? "Spending is close to the limit." : budgetState.label === "No budget set" ? "Set a limit to track this month." : "Spending is within the limit."}</p></div><StatusPill tone={budgetState.tone}>{budgetState.label}</StatusPill></div><div className="budget-figure"><strong>{money.format(total)}</strong><span> / {money.format(activeBudget.amount)}</span></div><div className="progress-track"><span className={`progress-track__fill progress-track__fill--${budgetState.tone}`} style={{ width: `${activeBudget.amount ? Math.min(budgetState.ratio * 100, 100) : 0}%` }} /></div><div className="budget-meta"><span>{activeBudget.amount ? `${budgetState.percentage}% used` : "No budget set"}</span><span>{money.format(remaining)} remaining</span></div></section>
   </div>;
 }

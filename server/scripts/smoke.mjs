@@ -24,17 +24,31 @@ try {
   const adminToken = adminAuth.body.token;
   const insights = await call("/admin/insights", { headers: { Authorization: `Bearer ${adminToken}` } });
   assert(insights.status === 200 && insights.body?.totals?.users === 1, "admin insights failed");
+  const summary = await call("/dashboard/summary?month=2026-10", { headers: { Authorization: `Bearer ${adminToken}` } });
+  assert(summary.status === 200 && summary.body?.count === 7 && summary.body?.total === 272.85 && summary.body?.largestExpense?.title === "Market groceries", "complete monthly summary failed");
 
   const userAuth = await call("/auth/signup", { method: "POST", ...json({ name: "Smoke User", email: "smoke@example.test", password: "password123" }) });
   assert(userAuth.status === 201 && userAuth.body?.token, "user sign-up failed");
   const forbidden = await call("/admin/insights", { headers: { Authorization: `Bearer ${userAuth.body.token}` } });
   assert(forbidden.status === 403, "non-admin access was not rejected");
+  const summaryUser = await call("/auth/signup", { method: "POST", ...json({ name: "Summary User", email: "summary@example.test", password: "password123" }) });
+  assert(summaryUser.status === 201 && summaryUser.body?.token, "summary user sign-up failed");
+  const bulkExpenses = await Promise.all(Array.from({ length: 55 }, (_, index) => call("/expenses", { method: "POST", ...json({ title: `Summary item ${index + 1}`, amount: 1.23, categoryId: "cat_001", date: "2026-10-01", paymentMethod: "Card" }, summaryUser.body.token) })));
+  assert(bulkExpenses.every((result) => result.status === 201), "bulk expense creation failed");
+  const completeSummary = await call("/dashboard/summary?month=2026-10", { headers: { Authorization: `Bearer ${summaryUser.body.token}` } });
+  assert(completeSummary.status === 200 && completeSummary.body?.count === 55 && completeSummary.body?.byCategory?.[0]?.count === 55, "monthly summary was capped or incomplete");
 
   const category = await call("/categories", { method: "POST", ...json({ name: "Smoke Category", color: "#123456", icon: "coffee" }, adminToken) });
   assert(category.status === 201 && category.body.item.icon === "coffee", "category creation or icon persistence failed");
   const categoryId = category.body.item.id;
   const createdExpense = await call("/expenses", { method: "POST", ...json({ title: "Smoke reassignment", amount: 12.5, categoryId, date: "2026-10-16", paymentMethod: "Cash" }, adminToken) });
   assert(createdExpense.status === 201, "expense creation failed");
+  const deepLinkedExpense = await call(`/expenses/${createdExpense.body.item.id}`, { headers: { Authorization: `Bearer ${adminToken}` } });
+  assert(deepLinkedExpense.status === 200 && deepLinkedExpense.body.item.date === "2026-10-16", "expense deep link failed");
+  const invalidExpense = await call("/expenses", { method: "POST", ...json({ title: "", amount: 0, categoryId, date: "not-a-date", paymentMethod: "Cash" }, adminToken) });
+  assert(invalidExpense.status === 422 && invalidExpense.body?.code === "INVALID_INPUT", "invalid expense payload was not rejected cleanly");
+  const malformedBody = await fetch(`${base}/expenses`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}` }, body: "[]" });
+  assert(malformedBody.status === 400, "non-object JSON body was not rejected");
   const filtered = await call("/expenses?month=2026-10&dateFrom=2026-10-16&dateTo=2026-10-16", { headers: { Authorization: `Bearer ${adminToken}` } });
   assert(filtered.status === 200 && filtered.body.items.some((item) => item.title === "Smoke reassignment"), "date filtering failed");
   const amountFiltered = await call("/expenses?minAmount=10&maxAmount=15", { headers: { Authorization: `Bearer ${adminToken}` } });
@@ -51,7 +65,7 @@ try {
   assert(afterDelete.status === 200 && afterDelete.body.items[0]?.category.name === "Uncategorized", "category reassignment failed");
   const userExpenses = await call("/expenses", { headers: { Authorization: `Bearer ${userAuth.body.token}` } });
   assert(userExpenses.status === 200 && userExpenses.body.total === 0, "expense ownership boundary failed");
-  console.log("Retain smoke test passed: auth, admin authorization, ownership, budgets, category CRUD, reassignment, month/date filtering, and amount filtering.");
+  console.log("Retain smoke test passed: auth, admin authorization, ownership, complete monthly summaries, deep links, validation, budgets, category CRUD, reassignment, month/date filtering, and amount filtering.");
 } catch (error) {
   console.error(`Retain smoke test failed: ${error instanceof Error ? error.message : String(error)}`);
   process.exitCode = 1;

@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { apiRequest } from "../../lib/api";
+import { currentDate } from "../../lib/date";
 import type { Expense, ExpenseCategory, ExpenseInput } from "../../types/retain";
 
 type ExpenseFormProps = {
@@ -9,14 +10,12 @@ type ExpenseFormProps = {
   onSaved: (expense: Expense) => void;
 };
 
-const today = new Date().toISOString().slice(0, 10);
-
 export default function ExpenseForm({ categories, expense, onCancel, onSaved }: ExpenseFormProps) {
   const [form, setForm] = useState<ExpenseInput>({
     title: expense?.title ?? "",
     amount: expense?.amount ?? 0,
     categoryId: expense?.category.id ?? categories[0]?.id ?? "",
-    date: expense?.date ?? today,
+    date: expense?.date ?? currentDate(),
     paymentMethod: expense?.paymentMethod ?? "Card",
     note: expense?.note ?? "",
   });
@@ -24,16 +23,22 @@ export default function ExpenseForm({ categories, expense, onCancel, onSaved }: 
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (expense) {
-      setForm({
+    setForm(expense ? {
         title: expense.title,
         amount: expense.amount,
         categoryId: expense.category.id,
         date: expense.date,
         paymentMethod: expense.paymentMethod,
         note: expense.note ?? "",
+      } : {
+        title: "",
+        amount: 0,
+        categoryId: categories[0]?.id ?? "",
+        date: currentDate(),
+        paymentMethod: "Card",
+        note: "",
       });
-    }
+    setError(null);
   }, [expense]);
 
   useEffect(() => {

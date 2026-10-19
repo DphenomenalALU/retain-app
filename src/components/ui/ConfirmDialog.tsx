@@ -17,12 +17,15 @@ export default function ConfirmDialog({ open, title, description, confirmLabel, 
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const onCancelRef = useRef(onCancel);
+
+  useEffect(() => { onCancelRef.current = onCancel; }, [onCancel]);
 
   useEffect(() => {
     if (!open) return;
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !busy) onCancel();
+      if (event.key === "Escape" && !busy) onCancelRef.current();
       if (event.key !== "Tab") return;
       const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])") ?? []);
       if (!focusable.length) return;
@@ -36,7 +39,7 @@ export default function ConfirmDialog({ open, title, description, confirmLabel, 
     document.addEventListener("keydown", onKeyDown);
     requestAnimationFrame(() => cancelButtonRef.current?.focus());
     return () => { document.body.style.overflow = previousOverflow; document.removeEventListener("keydown", onKeyDown); previousFocusRef.current?.focus(); previousFocusRef.current = null; };
-  }, [busy, onCancel, open]);
+  }, [busy, open]);
 
   if (!open) return null;
 

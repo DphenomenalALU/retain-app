@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { useDispatch } from "react-redux";
 import { useAuth } from "../../context/AuthContext";
+import { useAppDispatch } from "../../store/hooks";
 import { setSidebarOpen } from "../../store/slices/uiSlice";
 import { Icon } from "../ui/Icon";
 import NotificationsPopover from "./NotificationsPopover";
@@ -12,7 +12,7 @@ const tabs = [{ to: "/", label: "Overview" }, { to: "/expenses", label: "Expense
 
 export default function Topbar() {
   const location = useLocation();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { user } = useAuth();
   const title = titles[location.pathname] ?? "Retain";
 
