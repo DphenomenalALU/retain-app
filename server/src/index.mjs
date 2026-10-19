@@ -40,7 +40,14 @@ const amountFilter = (value, label) => { if (value === null || value === "") ret
 const textValue = (value, label, maxLength, required = true) => { if (typeof value !== "string") throw new HttpError(422, `${label} must be text.`, "INVALID_INPUT"); const normalized = value.trim(); if (required && !normalized) throw new HttpError(422, `${label} is required.`, "INVALID_INPUT"); if (normalized.length > maxLength) throw new HttpError(422, `${label} must be ${maxLength} characters or fewer.`, "INVALID_INPUT"); return normalized; };
 const optionalTextValue = (value, label, maxLength) => value === undefined || value === null || value === "" ? undefined : textValue(value, label, maxLength);
 const emailValue = (value) => { const email = textValue(value, "Email", 254).toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(422, "Enter a valid email address.", "INVALID_EMAIL"); return email; };
-const moneyValue = (value, label, minimum) => { if (typeof value !== "number" || !Number.isFinite(value) || value < minimum || value > 9_999_999_999.99 || Math.round(value * 100) !== value * 100) throw new HttpError(422, `${label} must be a valid amount with up to two decimal places.`, "INVALID_AMOUNT"); return Number(value.toFixed(2)); };
+const moneyValue = (value, label, minimum) => {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < minimum || value > 9_999_999_999.99) throw new HttpError(422, `${label} must be a valid amount with up to two decimal places.`, "INVALID_AMOUNT");
+  const scaled = value * 100;
+  const cents = Math.round(scaled);
+  const floatingPointTolerance = Number.EPSILON * Math.max(1, Math.abs(scaled)) * 16;
+  if (Math.abs(cents - scaled) > floatingPointTolerance) throw new HttpError(422, `${label} must be a valid amount with up to two decimal places.`, "INVALID_AMOUNT");
+  return cents / 100;
+};
 const currentMonth = () => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`; };
 const categoryView = (category) => { const safeCategory = category ?? { id: "cat_005", name: "Uncategorized", color: "#CFCFCF", icon: "tag" }; return { id: safeCategory.id, name: safeCategory.name, color: safeCategory.color, icon: safeCategory.icon ?? defaultCategoryIcons[safeCategory.id] ?? "receipt" }; };
 const findCategory = (categories, idValue) => categories.find((category) => category.id === idValue) ?? categories.at(-1);
