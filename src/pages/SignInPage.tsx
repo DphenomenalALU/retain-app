@@ -2,10 +2,51 @@ import { useState, type FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Icon } from "../components/ui/Icon";
+import BrandLockup from "../components/ui/BrandLockup";
 
 export default function SignInPage() {
-  const { user, error: authError, signIn, signUp } = useAuth(); const navigate = useNavigate(); const [mode, setMode] = useState<"signin" | "signup">("signin"); const [name, setName] = useState(""); const [email, setEmail] = useState("maya@retain.app"); const [password, setPassword] = useState("password"); const [submitting, setSubmitting] = useState(false);
+  const { user, error: authError, signIn, signUp } = useAuth();
+  const navigate = useNavigate();
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
   if (user) return <Navigate to="/" replace />;
-  const submit = async (event: FormEvent) => { event.preventDefault(); setSubmitting(true); try { if (mode === "signup") await signUp(name, email, password); else await signIn(email, password); navigate("/"); } catch { /* AuthContext exposes the user-facing error. */ } finally { setSubmitting(false); } };
-  return <main className="auth-page"><section className="auth-card"><div className="brand-lockup"><div className="brand-mark">R</div><div><strong>retain</strong><span>personal finance</span></div></div><p className="eyebrow">{mode === "signin" ? "Welcome back" : "Start your rhythm"}</p><h1>{mode === "signin" ? "Make money feel clearer." : "Build a calmer money habit."}</h1><p className="page-lede">{mode === "signin" ? "Sign in to continue your monthly rhythm." : "Create a private space for your expenses and plans."}</p><form onSubmit={submit}>{mode === "signup" && <label>Name<input autoComplete="name" onChange={(event) => setName(event.target.value)} required value={name} /></label>}<label>Email<input autoComplete="email" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} /></label><label>Password<input autoComplete={mode === "signin" ? "current-password" : "new-password"} minLength={8} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} /></label>{authError && <p className="form-error" role="alert">{authError}</p>}<button className="button button--primary button--full" disabled={submitting} type="submit">{submitting ? "Working…" : mode === "signin" ? "Continue" : "Create account"} <Icon name="arrow" size={17} /></button></form><button className="auth-switch" onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setPassword(""); }} type="button">{mode === "signin" ? "New to Retain? Create an account" : "Already have an account? Sign in"}</button>{mode === "signin" && <p className="auth-note">Demo admin: maya@retain.app · password</p>}</section><div className="auth-aside"><span className="auth-orbit auth-orbit--one" /><span className="auth-orbit auth-orbit--two" /><div><p className="eyebrow">A calmer way to keep track</p><h2>Spend with intention.<br />Keep what matters.</h2></div></div></main>;
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setSubmitting(true);
+    try {
+      if (mode === "signup") await signUp(name, email, password);
+      else await signIn(email, password);
+      navigate("/");
+    } catch {
+      // AuthContext exposes the user-facing error.
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return <main className="auth-page">
+    <section aria-labelledby="auth-heading" className="auth-card">
+      <BrandLockup />
+      <div className="auth-card__content">
+        <div className="auth-card__intro">
+          <p className="eyebrow">{mode === "signin" ? "Expenses & budgets" : "A clearer starting point"}</p>
+          <h1 id="auth-heading">{mode === "signin" ? "Welcome back." : "Create your ledger."}</h1>
+          <p className="page-lede">{mode === "signin" ? "Pick up where your spending left off." : "Keep everyday spending, budgets, and context in one place."}</p>
+        </div>
+        <form onSubmit={submit}>
+          {mode === "signup" && <label>Name<input autoComplete="name" onChange={(event) => setName(event.target.value)} required value={name} /></label>}
+          <label>Email<input autoComplete="email" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} /></label>
+          <label>Password<input autoComplete={mode === "signin" ? "current-password" : "new-password"} minLength={8} onChange={(event) => setPassword(event.target.value)} required type="password" value={password} /></label>
+          {authError && <p className="form-error" role="alert">{authError}</p>}
+          <button className="button button--primary button--full" disabled={submitting} type="submit">{submitting ? "Working…" : mode === "signin" ? "Sign in" : "Create account"} <Icon name="arrow" size={17} /></button>
+        </form>
+        <button className="auth-switch" onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setPassword(""); }} type="button">{mode === "signin" ? "New to Retain? Create an account" : "Already have an account? Sign in"}</button>
+      </div>
+    </section>
+  </main>;
 }

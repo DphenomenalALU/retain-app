@@ -1,9 +1,9 @@
-INSERT INTO categories (id, name, color, is_system) VALUES
-  ('cat_001', 'Food & dining', '#E58B58', FALSE),
-  ('cat_002', 'Transport', '#4E8C9A', FALSE),
-  ('cat_003', 'Home', '#8D7BBD', FALSE),
-  ('cat_004', 'Wellness', '#D39A52', FALSE),
-  ('cat_005', 'Uncategorized', '#9AA6A2', TRUE)
+INSERT INTO categories (id, name, color, icon, is_system) VALUES
+  ('cat_001', 'Food & dining', '#EEB390', 'utensils', FALSE),
+  ('cat_002', 'Transport', '#BFDBFE', 'car', FALSE),
+  ('cat_003', 'Home', '#B7AEE9', 'house', FALSE),
+  ('cat_004', 'Wellness', '#B1EBC5', 'heart', FALSE),
+  ('cat_005', 'Uncategorized', '#CFCFCF', 'tag', TRUE)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO users (id, name, email, password_hash, role) VALUES

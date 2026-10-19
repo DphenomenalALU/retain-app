@@ -2,11 +2,11 @@ import type { Budget, Expense, ExpenseCategory, User } from "../types/retain";
 
 export const demoUser: User = { id: "usr_001", name: "Maya Ibrahim", email: "maya@retain.app", role: "admin" };
 export const categories: ExpenseCategory[] = [
-  { id: "cat_001", name: "Food & dining", color: "#e58b58", count: 12 },
-  { id: "cat_002", name: "Transport", color: "#4e8c9a", count: 8 },
-  { id: "cat_003", name: "Home", color: "#8d7bbd", count: 6 },
-  { id: "cat_004", name: "Wellness", color: "#d39a52", count: 4 },
-  { id: "cat_005", name: "Uncategorized", color: "#9aa6a2", count: 1 },
+  { id: "cat_001", name: "Food & dining", color: "#eeb390", icon: "utensils", count: 12 },
+  { id: "cat_002", name: "Transport", color: "#bfdbfe", icon: "car", count: 8 },
+  { id: "cat_003", name: "Home", color: "#b7aee9", icon: "house", count: 6 },
+  { id: "cat_004", name: "Wellness", color: "#b1ebc5", icon: "heart", count: 4 },
+  { id: "cat_005", name: "Uncategorized", color: "#cfcfcf", icon: "tag", count: 1 },
 ];
 export const mockExpenses: Expense[] = [
   { id: "exp_001", title: "Market groceries", amount: 86.4, category: categories[0], date: "2026-10-12", paymentMethod: "Card", note: "Weekly staples" },
