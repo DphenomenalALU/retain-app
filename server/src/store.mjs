@@ -12,7 +12,7 @@ const dataDir = join(__dirname, "../data");
 const defaultDataFile = join(dataDir, "retain.json");
 const isProduction = process.env.NODE_ENV === "production";
 const configuredAdminEmail = process.env.RETAIN_ADMIN_EMAIL?.trim().toLowerCase() || (!isProduction ? "emmanuel@retain.app" : "");
-const configuredAdminPassword = process.env.RETAIN_ADMIN_PASSWORD || (!isProduction ? "12345678" : "");
+const configuredAdminPassword = process.env.RETAIN_ADMIN_PASSWORD || (!isProduction ? "RetainDemo2026!" : "");
 const seedDemoData = process.env.RETAIN_SEED_DEMO === "true" || !isProduction;
 const legacyDemoEmail = "emmanuel@retain.app";
 

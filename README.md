@@ -82,12 +82,12 @@ Local demo admin credentials:
 
 ```text
 emmanuel@retain.app
-12345678
+RetainDemo2026!
 ```
 
-These credentials exist only for the local JSON repository and assessment/demo use. They are not provisioned when `NODE_ENV=production`.
+These are the shared assessment/demo credentials used by the local JSON repository and the hosted Vercel/Railway deployment. The account is intentionally seeded with sample data for assessment use only; do not reuse this password for real financial data.
 
-For hosted API configuration, provide `DATABASE_URL`, a strong `JWT_SECRET`, exact `CORS_ORIGIN` values, and private `RETAIN_ADMIN_EMAIL` / `RETAIN_ADMIN_PASSWORD` values. The API requires these values in production, initializes the PostgreSQL schema on startup, provisions the configured admin, and does not load demo records unless `RETAIN_SEED_DEMO=true` is explicitly set.
+For hosted API configuration, provide `DATABASE_URL`, a strong `JWT_SECRET`, exact `CORS_ORIGIN` values, and `RETAIN_ADMIN_EMAIL` / `RETAIN_ADMIN_PASSWORD` values. `RETAIN_ADMIN_NAME` is an optional display name. The API requires the database, JWT, CORS, admin email, and admin password in production, initializes the PostgreSQL schema on startup, provisions that admin, and loads demo records only when `RETAIN_SEED_DEMO=true` is explicitly set.
 
 ## Deploying Retain
 
@@ -107,6 +107,8 @@ The GitHub `main` branch is the source of truth. A push to `main` should trigger
 - Railway API: [retain-api-production.up.railway.app](https://retain-api-production.up.railway.app)
 - API health check: [retain-api-production.up.railway.app/api/health](https://retain-api-production.up.railway.app/api/health)
 
+The live Vercel frontend talks to the Railway API through `VITE_API_URL`. Open the frontend link and use the shared assessment/demo credentials above. Vercel serves the interface; the sign-in, seeded expenses, budgets, and admin data come from Railway.
+
 ### Deploy the API on Railway
 
 1. Create or open the `Retain` Railway project.
@@ -121,10 +123,10 @@ The GitHub `main` branch is the source of truth. A push to `main` should trigger
    | `JWT_SECRET` | A long, private random value. Never use the example value. |
    | `CORS_ORIGIN` | One or more exact Vercel origins, comma-separated if needed. For production use `https://retain-app-green.vercel.app`; add a specific preview origin only while testing that preview. Do not add trailing slashes. |
    | `NODE_ENV` | `production` |
-   | `RETAIN_ADMIN_NAME` | Display name for the private production admin account. |
-   | `RETAIN_ADMIN_EMAIL` | Private production admin email. |
-   | `RETAIN_ADMIN_PASSWORD` | Strong private production admin password; never commit it. |
-   | `RETAIN_SEED_DEMO` | `false` for a clean hosted database; only set `true` intentionally for an assessment/demo database. |
+   | `RETAIN_ADMIN_NAME` | Optional display name for the provisioned admin; defaults to `Emmanuel Annor`. |
+   | `RETAIN_ADMIN_EMAIL` | Email used to sign in to the provisioned admin/demo account. |
+   | `RETAIN_ADMIN_PASSWORD` | At least 12 characters. This assessment deployment intentionally uses the shared demo password above; use a private value for any real production deployment. |
+   | `RETAIN_SEED_DEMO` | `true` for the hosted assessment/demo dataset; use `false` for a clean production database. |
 
    Railway provides `PORT` automatically. The API refuses to start in production unless the database, JWT, CORS, and private admin variables are present. It initializes the PostgreSQL schema during startup, so there is no manual SQL step for a normal deploy.
 
@@ -147,7 +149,7 @@ The GitHub `main` branch is the source of truth. A push to `main` should trigger
    ```
 
 4. Deploy. The checked-in [`vercel.json`](./vercel.json) already defines the Vite build, `dist` output, and SPA fallback needed for `/expenses`, `/budgets`, and `/admin`.
-5. Open the deployment and test sign-in with the private production admin values configured on Railway. Do not paste those credentials into the repository or public documentation.
+5. Open the deployment and test sign-in with the shared assessment/demo credentials above. Vercel only serves the frontend; authentication and demo data come from Railway. For a real production deployment, replace the public demo password with a private value and do not commit it.
 
    Vercel preview deployments use changing URLs. Before testing a preview against Railway, add that preview’s exact origin to Railway’s comma-separated `CORS_ORIGIN`, redeploy the API, and remove it afterward if it is no longer needed.
 

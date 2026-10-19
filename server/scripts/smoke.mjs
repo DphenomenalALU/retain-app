@@ -19,7 +19,7 @@ const waitForHealth = async () => { const deadline = Date.now() + 5000; while (D
 
 try {
   await waitForHealth();
-  const adminAuth = await call("/auth/signin", { method: "POST", ...json({ email: "emmanuel@retain.app", password: "12345678" }) });
+  const adminAuth = await call("/auth/signin", { method: "POST", ...json({ email: "emmanuel@retain.app", password: "RetainDemo2026!" }) });
   assert(adminAuth.status === 200 && adminAuth.body?.token, "admin sign-in failed");
   const adminToken = adminAuth.body.token;
   const insights = await call("/admin/insights", { headers: { Authorization: `Bearer ${adminToken}` } });
